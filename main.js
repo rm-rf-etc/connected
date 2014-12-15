@@ -23,7 +23,6 @@
       if (form.hasOwnProperty(prop)) {
 
         ;(function(field){
-          var field
           var setup_input = function(notify){
             field.addEventListener('input', function(ev){
               var execute = function(){ data[field.name] = ev.target.value }
@@ -37,6 +36,7 @@
             })
           }
           CrossTalk.inputManager( setup_input, setup_output )
+          form[prop].value = data[prop]
         })(form[prop])
 
       }

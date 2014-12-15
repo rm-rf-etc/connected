@@ -2,34 +2,61 @@
 <html>
 <head>
   <title>Cross Talk</title>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { width: 100%; }
+    body { width: 70%; margin: auto; margin-top: 3rem; }
+    .column { float: left; margin: 0 5% 1rem 5%; }
+    .width-6 { width: 40%; }
+    .width-12 { width: 90%; }
+    form { width: 100%; }
+    input { width: 100%; }
+  </style>
+
   <script>
-  // $.fn.serializeObject = function(){
-  //   var o = {}
-  //   var a = this.serializeArray()
-  //   $.each(a, function() {
-  //     if (o[this.name]) {
-  //       if (!o[this.name].push) {
-  //         o[this.name] = [o[this.name]]
-  //       }
-  //       o[this.name].push(this.value || '')
-  //     } else {
-  //       o[this.name] = this.value || ''
-  //     }
-  //   })
-  //   return o
-  // }
+    // $.fn.serializeObject = function(){
+    //   var o = {}
+    //   var a = this.serializeArray()
+    //   $.each(a, function() {
+    //     if (o[this.name]) {
+    //       if (!o[this.name].push) {
+    //         o[this.name] = [o[this.name]]
+    //       }
+    //       o[this.name].push(this.value || '')
+    //     } else {
+    //       o[this.name] = this.value || ''
+    //     }
+    //   })
+    //   return o
+    // }
   </script>
 </head>
 <body>
-  <form id="form1">
-    <input name='first'/>
-    <input name='last'/>
-  </form>
-  <br>
-  <form id="form2">
-    <input name='first'/>
-    <input name='last'/>
-  </form>
+  <div class="column width-6">
+    <form id="form1">
+      <input name='first'/>
+      <input name='middle'/>
+      <input name='last'/>
+      <input name='color'/>
+    </form>
+  </div>
+  <div class="column width-6">
+    <form id="form2">
+      <input name='first'/>
+      <input name='middle'/>
+      <input name='last'/>
+      <input name='color'/>
+    </form>
+  </div>
+  <div class="column width-12">
+    <form id="form3">
+      <input name='first'/>
+      <input name='middle'/>
+      <input name='last'/>
+      <input name='color'/>
+    </form>
+  </div>
   <script src="/node_modules/microevent/microevent.js"></script>
   <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
   <script src="/main.js"></script>
@@ -40,11 +67,14 @@
 
   var form1 = document.querySelector('#form1')
   var form2 = document.querySelector('#form2')
-  var form_data = { first: 'foo', last: 'bar' }
+  var form3 = document.querySelector('#form3')
 
+  var form_data = { first: 'foo', middle: 'and', last: 'bar', color: 'rule' }
   var data_binder = new CrossTalk.Binding( form_data )
+
   CrossTalk.addForm(form1, data_binder)
   CrossTalk.addForm(form2, data_binder)
+  CrossTalk.addForm(form3, data_binder)
 
   </script>
 </body>
