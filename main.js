@@ -5,9 +5,61 @@
 
   var CrossTalk = {
     Binding: Binding
-  , bindings: function(){ return _objects }
+  , addForm: addForm
   , inputManager: blockify
+  , bindings: function(){ return _objects }
   }
+
+
+  /*
+  Takes a form DOM object and a Binding object, and does the rest for you.
+  */
+  function addForm(form, binding_object){
+
+    var data = binding_object.checkout()
+    form = formigate(form)
+
+    for (var prop in form) {
+      if (form.hasOwnProperty(prop)) {
+
+        ;(function(field){
+          var field
+          var setup_input = function(notify){
+            field.addEventListener('input', function(ev){
+              var execute = function(){ data[field.name] = ev.target.value }
+              notify(execute)
+            })
+          }
+          var setup_output = function(notify){
+            binding_object.bind(field.name, function(val){
+              var execute = function(){ field.value = val }
+              notify(execute)
+            })
+          }
+          CrossTalk.inputManager( setup_input, setup_output )
+        })(form[prop])
+
+      }
+    }
+  }
+
+
+  /*
+  Converts a form into an object where the field name is the key and DOM object the value.
+  CURRENTLY DEPENDS ON JQUERY. PLANNING ON CHANGING THIS.
+  */
+  function formigate(form){
+    var $form = $(form)
+    form = {}
+
+    $form.children().each(function(i, field){
+      var event_string = field.name
+      form[field.name] = field
+    })
+
+    return form
+  }
+
 
   /*
   Inverts control: Allows inputs to block update events when they are the sender.
@@ -18,7 +70,12 @@
     setup_output(function(run){ if (! sender) run(); sender = false })
   }
 
+
+  /*
+  Recursively constructs a copy of the input object, having getter/setter pairs of every ownProperty.
+  */
   function Binding(data){
+    if (typeOf(data) !== 'Object' || familyOf(data) !== 'complex') return null
     var _data, _bindings, set_cb, _prop_path
 
     _bindings = {}

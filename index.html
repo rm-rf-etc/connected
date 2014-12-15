@@ -2,20 +2,6 @@
 <html>
 <head>
   <title>Cross Talk</title>
-</head>
-<body>
-  <form id="form1">
-    <input name='first'/>
-    <input name='last'/>
-  </form>
-  <br>
-  <form id="form2">
-    <input name='first'/>
-    <input name='last'/>
-  </form>
-  <script src="/node_modules/microevent/microevent.js"></script>
-  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
-  <script src="/main.js"></script>
   <script>
   // $.fn.serializeObject = function(){
   //   var o = {}
@@ -32,47 +18,33 @@
   //   })
   //   return o
   // }
-
-
-  var $form1 = $('#form1')
-  var $form2 = $('#form2')
-
+  </script>
+</head>
+<body>
+  <form id="form1">
+    <input name='first'/>
+    <input name='last'/>
+  </form>
+  <br>
+  <form id="form2">
+    <input name='first'/>
+    <input name='last'/>
+  </form>
+  <script src="/node_modules/microevent/microevent.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+  <script src="/main.js"></script>
+  <script>
+  // var $form1 = $('#form1')
+  // var $form2 = $('#form2')
   // var form_data = $('#form1').serializeObject()
+
+  var form1 = document.querySelector('#form1')
+  var form2 = document.querySelector('#form2')
   var form_data = { first: 'foo', last: 'bar' }
 
-  var data_binder = new CrossTalk.Binding(form_data)
-  var clone = data_binder.checkout()
-
-  var id = 1
-
-  function formBinder($form, bindings){
-    var data = bindings.checkout()
-
-    $form.children().each(function(i, field){
-      var _id = ++id
-      var event_string = field.name
-      var active = false
-
-      var setup_input = function(notify){
-        field.addEventListener('input', function(ev){
-          var execute = function(){ clone[field.name] = ev.target.value }
-          notify(execute)
-        })
-      }
-      var setup_output = function(notify){
-        bindings.bind(event_string, function(val){
-          var execute = function(){ field.value = val }
-          notify(execute)
-        })
-      }
-      CrossTalk.inputManager( setup_input, setup_output )
-
-      field.value = form_data[field.name]
-    })
-  }
-
-  formBinder($form1, data_binder)
-  formBinder($form2, data_binder)
+  var data_binder = new CrossTalk.Binding( form_data )
+  CrossTalk.addForm(form1, data_binder)
+  CrossTalk.addForm(form2, data_binder)
 
   </script>
 </body>
