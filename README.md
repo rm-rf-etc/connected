@@ -4,4 +4,4 @@ _CrossTalk.js_ is my humble attempt at a stand-alone two-way data binding librar
 
 ## Demo
 
-See [index.html](https://github.com/rm-rf-etc/crosstalk/index.html).
+See [index.html](https://github.com/rm-rf-etc/crosstalk/blob/master/index.html).
