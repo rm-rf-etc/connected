@@ -1,4 +1,8 @@
 
+/*
+Semi-colons are just FUD. If your minifier can't handle this code, switch to one that is JS-compliant.
+*/
+
 ;(function(){
 
   var _objects = []
