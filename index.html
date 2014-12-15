@@ -17,39 +17,57 @@
   <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
   <script src="/main.js"></script>
   <script>
-  $.fn.serializeObject = function(){
-    var o = {}
-    var a = this.serializeArray()
-    $.each(a, function() {
-      if (o[this.name]) {
-        if (!o[this.name].push) {
-          o[this.name] = [o[this.name]]
-        }
-        o[this.name].push(this.value || '')
-      } else {
-        o[this.name] = this.value || ''
-      }
-    })
-    return o
-  }
+  // $.fn.serializeObject = function(){
+  //   var o = {}
+  //   var a = this.serializeArray()
+  //   $.each(a, function() {
+  //     if (o[this.name]) {
+  //       if (!o[this.name].push) {
+  //         o[this.name] = [o[this.name]]
+  //       }
+  //       o[this.name].push(this.value || '')
+  //     } else {
+  //       o[this.name] = this.value || ''
+  //     }
+  //   })
+  //   return o
+  // }
 
-  // var form1 = document.querySelector('#form1')
-  // var form2 = document.querySelector('#form2')
+
   var $form1 = $('#form1')
   var $form2 = $('#form2')
 
-  var form_data = $('#form1').serializeObject()
+  // var form_data = $('#form1').serializeObject()
+  var form_data = { first: 'foo', last: 'bar' }
 
   var data_binder = Binding(form_data)
   var clone = data_binder.checkout()
+
+  var id = 1
 
   function formBinder($form, bindings){
     var data = bindings.checkout()
 
     $form.children().each(function(i, field){
-      var name = field.name
-      field.addEventListener('keyup', function(ev){ data[name] = ev.target.value })
-      bindings.bind('this.' + name, function(val){ field.value = val })
+      var _id = ++id
+      var event_string = 'this.' + field.name
+      var active = false
+
+      field.addEventListener('input', function(ev){
+        console.log('INPUT EVENT:', _id)
+        active = true
+        clone[field.name] = ev.target.value
+        active = false
+      })
+      bindings.bind(event_string, function(val){
+        if (! active) {
+          console.log('PRINT EVENT:', _id)
+          field.value = val
+          active = false
+        }
+      })
+
+      field.value = form_data[field.name]
     })
   }
 
