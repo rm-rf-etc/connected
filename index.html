@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Cross Talk</title>
+</head>
+<body>
+  <form id="form1">
+    <input name='first'/>
+    <input name='last'/>
+  </form>
+  <br>
+  <form id="form2">
+    <input name='first'/>
+    <input name='last'/>
+  </form>
+  <script src="/node_modules/microevent/microevent.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+  <script src="/main.js"></script>
+  <script>
+  $.fn.serializeObject = function(){
+    var o = {}
+    var a = this.serializeArray()
+    $.each(a, function() {
+      if (o[this.name]) {
+        if (!o[this.name].push) {
+          o[this.name] = [o[this.name]]
+        }
+        o[this.name].push(this.value || '')
+      } else {
+        o[this.name] = this.value || ''
+      }
+    })
+    return o
+  }
+
+  var form1 = document.querySelector('#form1')
+  // var $form1 = $('#form1')
+  var form2 = document.querySelector('#form2')
+  // var $form2 = $('#form2')
+
+  var form_data = $('#form1').serializeObject()
+
+  var data_binder = Binding(form_data)
+  var clone = data_binder.checkout()
+
+  form1.children[0].addEventListener('keyup', function(ev){ clone.first = ev.target.value })
+  form2.children[0].addEventListener('keyup', function(ev){ clone.first = ev.target.value })
+  form1.children[1].addEventListener('keyup', function(ev){ clone.last = ev.target.value })
+  form2.children[1].addEventListener('keyup', function(ev){ clone.last = ev.target.value })
+
+  data_binder.bind('this.first', function(val){ form2.children[0].value = val; form1.children[0].value = val })
+  data_binder.bind('this.last', function(val){ form2.children[1].value = val; form1.children[1].value = val })
+
+  </script>
+</body>
+</html>
