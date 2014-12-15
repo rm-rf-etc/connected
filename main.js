@@ -1,71 +1,103 @@
 
-// ;(function(){
+;(function(){
 
-function Binding(data){
-  var _data = {}, _bindings = {}, set_cb, _name
+  var _objects = []
 
-  if (typeOf(data) === 'Array') _data = []
-
-  _name = 'this'
-  for (var each in data) {
-    if (data && data.hasOwnProperty(each)) { property(each, _name) }
+  var CrossTalk = {
+    Binding: Binding
+  , bindings: function(){ return _objects }
+  , inputManager: blockify
   }
-  function property(prop, _name){
-    var name = _name + '.' + prop
-    _bindings[name] = new MicroEvent()
 
-    set_cb = function(name,data){ _bindings[name].trigger(name,data)
-      // console.log(name,data)
+  /*
+  Inverts control: Allows inputs to block update events when they are the sender.
+  */
+  function blockify(setup_input, setup_output){
+    var sender = false
+    setup_input(function(run){ sender = true; run() })
+    setup_output(function(run){ if (! sender) run(); sender = false })
+  }
+
+  function Binding(data){
+    var _data, _bindings, set_cb, _prop_path
+
+    _bindings = {}
+    _prop_path = []
+
+    function recursive(data, property){
+
+      prop_path = _prop_path.concat(property)
+      var _data = {}
+      if (typeOf(data) === 'Array') _data = []
+
+      for (var each in data) {
+        if (data.hasOwnProperty(each)) processProperty(each, prop_path.concat(each))
+      }
+      function processProperty(property, prop_path){
+        var event_id = prop_path.join('.')
+
+        _bindings[event_id] = new MicroEvent()
+        set_cb = function(data){ // console.log(event_string,data)
+          _bindings[event_id].trigger(event_id,data)
+        }
+
+        init(_data, property, event_id, set_cb)
+
+        switch (familyOf(data[property])) {
+          case 'simple': _data[property] = data[property]; break;
+          default: _data[property] = recursive(data[property], property); break;
+        }
+      }
+      return _data
     }
+    _data = recursive(data, [])
+    _prop_path
 
-    init(_data, prop, name, set_cb)
-    switch (familyOf(data[prop])) {
-      case 'simple': _data[prop] = data[prop]; break;
-      case 'complex': _data[prop] = Binding(data[prop]).checkout(); break;
-      default: console.log('unknown'); break;
+    this.bind = function bind(property, set_cb){
+      if (! _bindings.hasOwnProperty(property)) _bindings[property] = new MicroEvent()
+      _bindings[property].bind(property, set_cb)
+    }
+    this.unbind = function unbind(property, set_cb){
+      if (_bindings.hasOwnProperty(property)) _bindings[property].unbind(set_cb)
+    }
+    this.checkout = function(){ return _data }
+
+    _objects.push(_data)
+  }
+
+  function init(obj, property, prop_path, set_cb){
+    var _val = undefined
+    Object.defineProperty(obj, property, {
+      get: function(){ return _val }
+    , set: function(val){ _val = val; set_cb(val) }
+    , enumerable: true
+    })
+  }
+
+  function familyOf (thing) {
+    if (typeOf(thing)) {
+      return {
+        Date: 'simple'
+      , String: 'simple'
+      , Number: 'simple'
+      , Boolean: 'simple'
+      , Function: 'simple'
+      , Object: 'complex'
+      , Array: 'complex'
+      }[typeOf(thing)] || 'complex'
+    } else {
+      return false
     }
   }
-  function bind(prop, set_cb){
-    if (! _bindings.hasOwnProperty(prop)) _bindings[prop] = new MicroEvent()
-    _bindings[prop].bind(prop,set_cb)
-  }
-  function unbind(prop, set_cb){
-    if (_bindings.hasOwnProperty(prop)) _bindings[prop].unbind(set_cb)
-  }
-  return {
-    bind: bind
-  , unbind: unbind
-  , checkout: function(){ return _data }
-  }
-}
 
-// })()
+  function typeOf (thing) {
+    return (thing != null && !Number.isNaN(thing) && thing.constructor) ? thing.constructor.name : null
+  }
 
-function familyOf (thing) {
-  if (typeOf(thing)) {
-    return {
-      String: 'simple'
-    , Number: 'simple'
-    , Boolean: 'simple'
-    , Function: 'simple'
-    , Date: 'simple'
-    , Array: 'complex'
-    , Object: 'complex'
-    }[typeOf(thing)] || 'complex'
+  if (typeof module !== 'undefined' && module.hasOwnProperty('exports')) {
+    module.exports = CrossTalk
   } else {
-    return false
+    window.CrossTalk = CrossTalk
   }
-}
 
-function typeOf (thing) {
-  return (thing != null && !Number.isNaN(thing) && thing.constructor) ? thing.constructor.name : null
-}
-
-function init(obj, prop, name, set_cb){
-  var _val = undefined
-  Object.defineProperty(obj, prop, {
-    get: function(){ return _val }
-  , set: function(val){ _val = val; set_cb(name,val) }
-  , enumerable: true
-  })
-}
+})()

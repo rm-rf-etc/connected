@@ -40,7 +40,7 @@
   // var form_data = $('#form1').serializeObject()
   var form_data = { first: 'foo', last: 'bar' }
 
-  var data_binder = Binding(form_data)
+  var data_binder = new CrossTalk.Binding(form_data)
   var clone = data_binder.checkout()
 
   var id = 1
@@ -50,22 +50,22 @@
 
     $form.children().each(function(i, field){
       var _id = ++id
-      var event_string = 'this.' + field.name
+      var event_string = field.name
       var active = false
 
-      field.addEventListener('input', function(ev){
-        console.log('INPUT EVENT:', _id)
-        active = true
-        clone[field.name] = ev.target.value
-        active = false
-      })
-      bindings.bind(event_string, function(val){
-        if (! active) {
-          console.log('PRINT EVENT:', _id)
-          field.value = val
-          active = false
-        }
-      })
+      var setup_input = function(notify){
+        field.addEventListener('input', function(ev){
+          var execute = function(){ clone[field.name] = ev.target.value }
+          notify(execute)
+        })
+      }
+      var setup_output = function(notify){
+        bindings.bind(event_string, function(val){
+          var execute = function(){ field.value = val }
+          notify(execute)
+        })
+      }
+      CrossTalk.inputManager( setup_input, setup_output )
 
       field.value = form_data[field.name]
     })
