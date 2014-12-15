@@ -33,23 +33,28 @@
     return o
   }
 
-  var form1 = document.querySelector('#form1')
-  // var $form1 = $('#form1')
-  var form2 = document.querySelector('#form2')
-  // var $form2 = $('#form2')
+  // var form1 = document.querySelector('#form1')
+  // var form2 = document.querySelector('#form2')
+  var $form1 = $('#form1')
+  var $form2 = $('#form2')
 
   var form_data = $('#form1').serializeObject()
 
   var data_binder = Binding(form_data)
   var clone = data_binder.checkout()
 
-  form1.children[0].addEventListener('keyup', function(ev){ clone.first = ev.target.value })
-  form2.children[0].addEventListener('keyup', function(ev){ clone.first = ev.target.value })
-  form1.children[1].addEventListener('keyup', function(ev){ clone.last = ev.target.value })
-  form2.children[1].addEventListener('keyup', function(ev){ clone.last = ev.target.value })
+  function formBinder($form, bindings){
+    var data = bindings.checkout()
 
-  data_binder.bind('this.first', function(val){ form2.children[0].value = val; form1.children[0].value = val })
-  data_binder.bind('this.last', function(val){ form2.children[1].value = val; form1.children[1].value = val })
+    $form.children().each(function(i, field){
+      var name = field.name
+      field.addEventListener('keyup', function(ev){ data[name] = ev.target.value })
+      bindings.bind('this.' + name, function(val){ field.value = val })
+    })
+  }
+
+  formBinder($form1, data_binder)
+  formBinder($form2, data_binder)
 
   </script>
 </body>
