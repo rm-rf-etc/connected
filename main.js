@@ -22,9 +22,8 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
   /*
   Takes a form DOM object and a Binding object, and does the rest for you.
   */
-  function addForm(form, binding_object){
-
-    var data = binding_object.checkout()
+  function addForm(form, container){
+    var bindable = container.bindable
     form = formigate(form)
 
     for (var prop in form) {
@@ -33,18 +32,18 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
         ;(function(field){
           var setup_input = function(notify){
             field.addEventListener('input', function(ev){
-              var execute = function(){ data[field.name] = ev.target.value }
+              var execute = function(){ bindable[field.name] = ev.target.value }
               notify(execute)
             })
           }
           var setup_output = function(notify){
-            binding_object.bind(field.name, function(val){
+            container.bind(field.name, function(val){
               var execute = function(){ field.value = val }
               notify(execute)
             })
           }
           CrossTalk.inputManager( setup_input, setup_output )
-          form[prop].value = data[prop]
+          form[prop].value = bindable[prop]
         })(form[prop])
 
       }
@@ -122,7 +121,11 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
     this.unbind = function unbind(property, set_cb){
       if (_bindings.hasOwnProperty(property)) _bindings[property].unbind(set_cb)
     }
-    this.checkout = function(){ return _data }
+    Object.defineProperty(this, 'bindable', {
+      get: function(){ return _data }
+    , set: function(){}
+    , enumerable: true
+    })
 
     _objects.push(_data)
   }

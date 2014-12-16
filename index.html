@@ -35,46 +35,41 @@
 <body>
   <div class="column width-6">
     <form id="form1">
-      <input name='first'/>
-      <input name='middle'/>
-      <input name='last'/>
-      <input name='color'/>
+      <input name='one'/>
+      <input name='two'/>
+      <input name='three'/>
+      <input name='four'/>
     </form>
   </div>
   <div class="column width-6">
     <form id="form2">
-      <input name='first'/>
-      <input name='middle'/>
-      <input name='last'/>
-      <input name='color'/>
+      <input name='one'/>
+      <input name='two'/>
+      <input name='three'/>
+      <input name='four'/>
     </form>
   </div>
   <div class="column width-12">
     <form id="form3">
-      <input name='first'/>
-      <input name='middle'/>
-      <input name='last'/>
-      <input name='color'/>
+      <input name='one'/>
+      <input name='two'/>
+      <input name='three'/>
+      <input name='four'/>
     </form>
   </div>
   <script src="/node_modules/microevent/microevent.js"></script>
   <script src="/main.js"></script>
   <script>
-  // var $form1 = $('#form1')
-  // var $form2 = $('#form2')
-  // var form_data = $('#form1').serializeObject()
+  var bindable = new CrossTalk.Binding({
+    one: 'Your'
+  , two: 'input'
+  , three: 'goes'
+  , four: 'here.'
+  })
 
-  var form1 = document.querySelector('#form1')
-  var form2 = document.querySelector('#form2')
-  var form3 = document.querySelector('#form3')
-
-  var form_data = { first: 'foo', middle: 'and', last: 'bar', color: 'rule' }
-  var data_binder = new CrossTalk.Binding( form_data )
-
-  CrossTalk.addForm(form1, data_binder)
-  CrossTalk.addForm(form2, data_binder)
-  CrossTalk.addForm(form3, data_binder)
-
+  CrossTalk.addForm(document.querySelector('#form1'), bindable)
+  CrossTalk.addForm(document.querySelector('#form2'), bindable)
+  CrossTalk.addForm(document.querySelector('#form3'), bindable)
   </script>
 </body>
 </html>
