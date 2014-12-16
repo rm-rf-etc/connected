@@ -54,18 +54,15 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
 
   /*
   Converts a form into an object where the field name is the key and DOM object the value.
-  CURRENTLY DEPENDS ON JQUERY. PLANNING ON CHANGING THIS.
   */
   function formigate(form){
-    var $form = $(form)
-    form = {}
+    var result = {}
 
-    $form.children().each(function(i, field){
-      var event_string = field.name
-      form[field.name] = field
+    ;[].forEach.call(form.querySelectorAll('input'), function(el){
+      result[el.name] = el
     })
 
-    return form
+    return result
   }
 
 
