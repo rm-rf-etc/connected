@@ -11,8 +11,12 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
     Binding: Binding
   , addForm: addForm
   , inputManager: blockify
-  , bindings: function(){ return _objects }
   }
+  Object.defineProperty(CrossTalk, 'bindings', {
+    get: function(){ return _objects }
+  , set: function(){}
+  , enumerable: true
+  })
 
 
   /*
