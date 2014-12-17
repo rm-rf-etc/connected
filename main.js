@@ -1,73 +1,126 @@
 
 /*
+
 Semi-colons are just FUD. If your minifier can't handle this code, switch to one that is JS-compliant.
+
 */
+
 
 ;(function(){
 
-  var _objects = []
+
+
+  /*  Private Class Data  */
+
+  var DEFINE = Object.defineProperty
+  var ID_GETTER_KEY = 7203445781487972
+
+  var _bindables = []
+  var _events = new MicroEvent()
+  var _ct = {
+    setter_cb: function(id,val){ _events.trigger(id,val) }
+  , send_id: function(){}
+  }
+
+
+
+  /*  Bindable Classes  */
+
+  function Bindable(data){
+    if (typeOf(data) === 'Array')
+      return new BindableArray(data)
+    else
+      return new BindableObject(data)
+  }
+
+  function BindableObject(data){
+    DEFINE(this, '_new_property_', { enumerable:false, configurable:false,
+      set:function(keyval){ this.addProperty(keyval[0], keyval[1]) }
+    })
+    for (var prop in data) {
+      if (data.hasOwnProperty(prop)) this._new_property_ = [prop, data[prop]]
+    }
+  }
+  BindableObject.prototype.addProperty = addProperty
+
+
+  function BindableArray(data){
+    var self = Array.prototype.slice.apply(arguments)
+
+    DEFINE(self, '_new_property_', { enumerable:false, configurable:false,
+      set:function(keyval){ addProperty.call(self, keyval[0], keyval[1]) }
+    })
+    for (var i in data) {
+      if (data.hasOwnProperty(i)) this._new_property_ = [i, data[i]]
+    }
+
+    return self
+  }
+  BindableArray.prototype.addProperty = addProperty
+
+
+  function addProperty(key, val){
+    var _val = undefined
+    var _id = Math.random().toString().split('.')[1]
+
+    DEFINE(this, key, {
+      enumerable: true
+    , get: function(){ return _val }
+    , set: function(value){
+        if (value === ID_GETTER_KEY) { _ct.send_id(_id) }
+        else { _val = value; _ct.setter_cb(_id, value) }
+      }
+    })
+
+    if (familyOf(val) === 'complex') val = new Bindable(val)
+    this[key] = val
+  }
+
+
 
   var CrossTalk = {
-    Binding: Binding
+    Binding: NewBindable
   , addForm: addForm
   , inputManager: blockify
+  , takeId: function(cb){ _ct.send_id = cb }
   }
-  Object.defineProperty(CrossTalk, 'bindings', {
-    get: function(){ return _objects }
-  , set: function(){}
-  , enumerable: true
-  })
+  DEFINE(CrossTalk, 'bindables', {get:function(){return _bindables}, enumerable: true})
+  DEFINE(CrossTalk, 'ID_GETTER_KEY', {value:ID_GETTER_KEY, writeable:false})
 
 
-  /*
-  Takes a form DOM object and a Binding object, and does the rest for you.
-  */
+
+  /* Takes a form DOM object and a Binding object, and does the rest for you. */
+
   function addForm(form, container){
     var bindable = container.bindable
-    form = formigate(form)
 
-    for (var prop in form) {
-      if (form.hasOwnProperty(prop)) {
+    ;[].forEach.call(form.querySelectorAll('input'), formFieldInitializer)
 
-        ;(function(field){
-          var setup_input = function(notify){
-            field.addEventListener('input', function(ev){
-              var execute = function(){ bindable[field.name] = ev.target.value }
-              notify(execute)
-            })
-          }
-          var setup_output = function(notify){
-            container.bind(field.name, function(val){
-              var execute = function(){ field.value = val }
-              notify(execute)
-            })
-          }
-          CrossTalk.inputManager( setup_input, setup_output )
-          form[prop].value = bindable[prop]
-        })(form[prop])
+    function formFieldInitializer(field){
 
+      function setup_input(notify){
+        function eventHandler(ev){
+          notify(function(){ bindable[field.name] = ev.target.value })
+        }
+        field.addEventListener('input', eventHandler)
       }
+
+      function setup_output(notify){
+        function eventHandler(val){
+          notify(function(){ field.value = val })
+        }
+        container.bind(bindable, field.name, eventHandler)
+      }
+
+      CrossTalk.inputManager( setup_input, setup_output )
+      field.value = bindable[field.name]
     }
   }
 
 
-  /*
-  Converts a form into an object where the field name is the key and DOM object the value.
-  */
-  function formigate(form){
-    var result = {}
 
-    ;[].forEach.call(form.querySelectorAll('input'), function(el){
-      result[el.name] = el
-    })
+  /* Inverts control: Allows inputs to block update events when they are the sender. */
 
-    return result
-  }
-
-
-  /*
-  Inverts control: Allows inputs to block update events when they are the sender.
-  */
   function blockify(setup_input, setup_output){
     var sender = false
     setup_input(function(run){ sender = true; run() })
@@ -75,71 +128,32 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
   }
 
 
-  /*
-  Recursively constructs a copy of the input object, having getter/setter pairs of every ownProperty.
-  */
-  function Binding(data){
-    if (typeOf(data) !== 'Object' || familyOf(data) !== 'complex') return null
-    var _data, _bindings, set_cb, _prop_path
 
-    _bindings = {}
-    _prop_path = []
+  /* Recursively constructs a copy of the input object, having getter/setter pairs of every ownProperty. */
 
-    function recursive(data, property){
+  function NewBindable(data){
+    var _data
+    if (familyOf(data) !== 'complex') return null
 
-      prop_path = _prop_path.concat(property)
-      var _data = {}
-      if (typeOf(data) === 'Array') _data = []
+    _data = new Bindable(data)
 
-      for (var each in data) {
-        if (data.hasOwnProperty(each)) processProperty(each, prop_path.concat(each))
-      }
-      function processProperty(property, prop_path){
-        var event_id = prop_path.join('.')
-
-        _bindings[event_id] = new MicroEvent()
-        set_cb = function(data){ // console.log(event_string,data)
-          _bindings[event_id].trigger(event_id,data)
-        }
-
-        init(_data, property, event_id, set_cb)
-
-        switch (familyOf(data[property])) {
-          case 'simple': _data[property] = data[property]; break;
-          default: _data[property] = recursive(data[property], property); break;
-        }
-      }
-      return _data
+    this.bind = function(parent, property, setter_cb){
+      CrossTalk.takeId(function(id){ _events.bind(id, setter_cb) })
+      parent[property] = ID_GETTER_KEY
     }
-    _data = recursive(data, [])
-    _prop_path
-
-    this.bind = function bind(property, set_cb){
-      if (! _bindings.hasOwnProperty(property)) _bindings[property] = new MicroEvent()
-      _bindings[property].bind(property, set_cb)
+    this.unbind = function(property, setter_cb){
+      _events.unbind(setter_cb)
     }
-    this.unbind = function unbind(property, set_cb){
-      if (_bindings.hasOwnProperty(property)) _bindings[property].unbind(set_cb)
-    }
-    Object.defineProperty(this, 'bindable', {
-      get: function(){ return _data }
-    , set: function(){}
-    , enumerable: true
-    })
+    DEFINE(this, 'bindable', {get:function(){return _data}, enumerable:true, configurable:false})
 
-    _objects.push(_data)
+    _bindables.push(_data)
   }
 
-  function init(obj, property, prop_path, set_cb){
-    var _val = undefined
-    Object.defineProperty(obj, property, {
-      get: function(){ return _val }
-    , set: function(val){ _val = val; set_cb(val) }
-    , enumerable: true
-    })
-  }
 
-  function familyOf (thing) {
+
+  /*  HELPERS  */
+
+  function familyOf(thing){
     if (typeOf(thing)) {
       return {
         Date: 'simple'
@@ -155,9 +169,10 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
     }
   }
 
-  function typeOf (thing) {
+  function typeOf(thing){
     return (thing != null && !Number.isNaN(thing) && thing.constructor) ? thing.constructor.name : null
   }
+
 
   if (typeof module !== 'undefined' && module.hasOwnProperty('exports')) {
     module.exports = CrossTalk
