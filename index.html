@@ -12,6 +12,17 @@
     .width-12 { width: 90%; }
     form { width: 100%; }
     input { width: 100%; }
+
+    textarea { width: 100%; height: 10rem; }
+    #gets-rendered-here {
+      font-family: monospace;
+    }
+    #gets-rendered-here div {
+      border: 1px solid #ccc;
+      display: table;
+      width: auto;
+      padding: 0.1rem 0.3rem 0.1rem 0.3rem;
+    }
   </style>
 
   <script>
@@ -50,12 +61,15 @@
     </form>
   </div>
   <div class="column width-12">
-    <form id="form3">
-      <input name='one'/>
-      <input name='two'/>
-      <input name='three'/>
-      <input name='four'/>
-    </form>
+<textarea id="your-json-here">
+[
+  {"tag":"div", "inner":"I'm bound to update when I change."},
+  {"tag":"div", "inner":"But it's not using bound data"},
+  {"tag":"div", "inner":"just yet."}
+]
+</textarea>
+  </div>
+  <div id="gets-rendered-here" class="column width-12">
   </div>
   <script src="/node_modules/microevent/microevent.js"></script>
   <script src="/main.js"></script>
@@ -67,11 +81,31 @@
   , four: 'here.'
   })
 
+
+  var json
+  var input = document.querySelector('#your-json-here')
+  var canvas = document.querySelector('#gets-rendered-here')
+  var container = new CrossTalk.Binding({})
+  var _output = ''
+  input.addEventListener('input',updateView)
+
+  function updateView(){
+    var json = false, html = ''
+
+    try {
+      json = JSON.parse(input.value)
+    } catch(e) {
+      html = 'Invalid JSON.'
+    }
+
+    if (json) html = CrossTalk.render( container.recompute(json).bindable )
+
+    if (_output !== html) canvas.innerHTML = _output = html
+  }
+  updateView()
+
   CrossTalk.addForm(document.querySelector('#form1'), bindable)
   CrossTalk.addForm(document.querySelector('#form2'), bindable)
-  CrossTalk.addForm(document.querySelector('#form3'), bindable)
-
-  // var t = new CrossTalk.Binding({a:1, b:2, c:[1,2,3], d:{a:1, b:2}})
   </script>
 </body>
 </html>

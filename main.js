@@ -29,7 +29,7 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
   function Bindable(data){
     if (typeOf(data) === 'Array')
       return new BindableArray(data)
-    else
+    else if (familyOf(data) === 'complex')
       return new BindableObject(data)
   }
 
@@ -41,7 +41,7 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
       if (data.hasOwnProperty(prop)) this._new_property_ = [prop, data[prop]]
     }
   }
-  BindableObject.prototype.addProperty = addProperty
+  DEFINE(BindableObject.prototype, 'addProperty', {enumerable:false, value:addProperty})
 
 
   function BindableArray(data){
@@ -56,7 +56,7 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
 
     return self
   }
-  BindableArray.prototype.addProperty = addProperty
+  DEFINE(BindableArray.prototype, 'addProperty', {enumerable:false, value:addProperty})
 
 
   function addProperty(key, val){
@@ -75,17 +75,6 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
     if (familyOf(val) === 'complex') val = new Bindable(val)
     this[key] = val
   }
-
-
-
-  var CrossTalk = {
-    Binding: NewBindable
-  , addForm: addForm
-  , inputManager: blockify
-  , takeId: function(cb){ _ct.send_id = cb }
-  }
-  DEFINE(CrossTalk, 'bindables', {get:function(){return _bindables}, enumerable: true})
-  DEFINE(CrossTalk, 'ID_GETTER_KEY', {value:ID_GETTER_KEY, writeable:false})
 
 
 
@@ -119,6 +108,26 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
 
 
 
+  function renderAsHtml(bindable){
+    // if (typeOf(bindable) !== 'BindableObject' && typeOf(bindable) !== 'BindableArray') return 'Not binadable.'
+    var html = ''
+
+    each(bindable[0], function(key, val){
+      if (validNode(val))
+        html += '<'+val.tag+'>'+val.inner+'</'+val.tag+'>\n'
+    })
+
+    return html
+  }
+  var validTags = ['div','h1','li','a','p','p']
+  function validNode(d){
+    if (d && d.hasOwnProperty('tag') && d.hasOwnProperty('inner') && validTags.indexOf(d.tag) !== false) {
+      return true
+    }
+  }
+
+
+
   /* Inverts control: Allows inputs to block update events when they are the sender. */
 
   function blockify(setup_input, setup_output){
@@ -131,7 +140,7 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
 
   /* Recursively constructs a copy of the input object, having getter/setter pairs of every ownProperty. */
 
-  function NewBindable(data){
+  function BindableContainer(data){
     var _data
     if (familyOf(data) !== 'complex') return null
 
@@ -143,6 +152,11 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
     }
     this.unbind = function(property, setter_cb){
       _events.unbind(setter_cb)
+    }
+    this.recompute = function(data){
+      if (familyOf(data) === 'complex')
+        _data = new Bindable(data)
+      return this
     }
     DEFINE(this, 'bindable', {get:function(){return _data}, enumerable:true, configurable:false})
 
@@ -173,11 +187,30 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
     return (thing != null && !Number.isNaN(thing) && thing.constructor) ? thing.constructor.name : null
   }
 
+  function each(obj, cb){
+    for (var prop in obj) cb(prop, obj[prop])
+  }
+
+
+
+  var CrossTalk = {
+    Binding: BindableContainer
+  , render: renderAsHtml
+  , addForm: addForm
+  , inputManager: blockify
+  , takeId: function(cb){ _ct.send_id = cb }
+  }
+  DEFINE(CrossTalk, 'bindables', {get:function(){return _bindables}, enumerable: true})
+  DEFINE(CrossTalk, 'ID_GETTER_KEY', {value:ID_GETTER_KEY, writeable:false})
+
 
   if (typeof module !== 'undefined' && module.hasOwnProperty('exports')) {
     module.exports = CrossTalk
   } else {
     window.CrossTalk = CrossTalk
+    window.familyOf = familyOf
+    window.typeOf = typeOf
+    window.Bindable = Bindable
   }
 
 })()
