@@ -87,7 +87,25 @@
   var canvas = document.querySelector('#gets-rendered-here')
   var container = new CrossTalk.Binding({})
   var _output = ''
-  input.addEventListener('input',updateView)
+
+  var collection = [
+    {}
+  , {}
+  ]
+
+  function changeItUp(){
+    for (var i in obj) {
+      if (Math.round( Math.random() )) {
+        // obj[i] = collection[i]
+        console.log(obj[i])
+      }
+    }
+  }
+
+
+  // input.addEventListener('input',updateView)
+
+  setTimeout(changeItUp, 3000)
 
   function updateView(){
     var json = false, html = ''
@@ -102,7 +120,7 @@
 
     if (_output !== html) canvas.innerHTML = _output = html
   }
-  updateView()
+  // updateView()
 
   CrossTalk.addForm(document.querySelector('#form1'), bindable)
   CrossTalk.addForm(document.querySelector('#form2'), bindable)
