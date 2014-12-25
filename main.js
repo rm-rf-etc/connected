@@ -83,27 +83,27 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
   function addForm(form, container){
     var bindable = container.bindable
 
-    ;[].forEach.call(form.querySelectorAll('input'), formFieldInitializer)
+    ;[].forEach.call(form.querySelectorAll('input'), function(field){
 
-    function formFieldInitializer(field){
+      if (field.name in bindable) {
+        CrossTalk.inputManager(function(notify_of_input, notify_of_output){
 
-      function setup_input(notify){
-        function eventHandler(ev){
-          notify(function(){ bindable[field.name] = ev.target.value })
-        }
-        field.addEventListener('input', eventHandler)
+          field.addEventListener('input', function(ev){
+            var do_it = function(){ bindable[field.name] = ev.target.value }
+            notify_of_input( do_it )
+          })
+
+          container.bind(bindable, field.name, function(val){
+            var do_it = function(){ field.value = val }
+            notify_of_output( do_it )
+          })
+
+        })
+
+        field.value = bindable[field.name]
       }
 
-      function setup_output(notify){
-        function eventHandler(val){
-          notify(function(){ field.value = val })
-        }
-        container.bind(bindable, field.name, eventHandler)
-      }
-
-      CrossTalk.inputManager( setup_input, setup_output )
-      field.value = bindable[field.name]
-    }
+    })
   }
 
 
@@ -128,12 +128,22 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
 
 
 
-  /* Inverts control: Allows inputs to block update events when they are the sender. */
+  /* Inverts control: Prevents inputs from receiving updates while they are the sender. */
 
-  function blockify(setup_input, setup_output){
-    var sender = false
-    setup_input(function(run){ sender = true; run() })
-    setup_output(function(run){ if (! sender) run(); sender = false })
+  function inputManager(fetch_notifiers){
+    var _sent_by_me = false
+
+    function notifies_of_input(do_it){
+      _sent_by_me = true
+      do_it()
+    })
+    function notifies_of_output(do_it){
+      if (! _sent_by_me) {
+        do_it()
+        _sent_by_me = false
+      }
+    })
+    fetch_notifiers( notifies_of_input, notifies_of_output )
   }
 
 
@@ -197,7 +207,7 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
     Binding: BindableContainer
   , render: renderAsHtml
   , addForm: addForm
-  , inputManager: blockify
+  , inputManager: inputManager
   , takeId: function(cb){ _ct.send_id = cb }
   }
   DEFINE(CrossTalk, 'bindables', {get:function(){return _bindables}, enumerable: true})
