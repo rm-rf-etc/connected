@@ -27,10 +27,9 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
   /*  Bindable Classes  */
 
   function Bindable(data){
-    if (typeOf(data) === 'Array')
-      return new BindableArray(data)
-    else if (familyOf(data) === 'complex')
-      return new BindableObject(data)
+    if (typeOf(data) === 'Array') return new BindableArray(data)
+
+    else if (familyOf(data) === 'complex') return new BindableObject(data)
   }
 
   function BindableObject(data){
@@ -85,6 +84,7 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
 
     ;[].forEach.call(form.querySelectorAll('input'), function(field){
 
+      console.log('NAME:',field.name,bindable)
       if (field.name in bindable) {
         CrossTalk.inputManager(function(notify_of_input, notify_of_output){
 
@@ -130,20 +130,20 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
 
   /* Inverts control: Prevents inputs from receiving updates while they are the sender. */
 
-  function inputManager(fetch_notifiers){
+  function inputManager(accepts_notifiers){
     var _sent_by_me = false
 
     function notifies_of_input(do_it){
       _sent_by_me = true
       do_it()
-    })
+    }
     function notifies_of_output(do_it){
       if (! _sent_by_me) {
         do_it()
         _sent_by_me = false
       }
-    })
-    fetch_notifiers( notifies_of_input, notifies_of_output )
+    }
+    accepts_notifiers( notifies_of_input, notifies_of_output )
   }
 
 
