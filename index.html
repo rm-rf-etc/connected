@@ -89,19 +89,22 @@
   var _output = ''
 
   var collection = [
-    {}
-  , {}
+    {tag:'div', html:"I'm bound to update when I change."}
+  , {tag:'div', html:"It's all for fun."}
+  , {tag:'div', html:"What's this crazy thing?"}
+  , {tag:'div', html:"Nuts dawg."}
+  , {tag:'div', html:"This shiznit be off da hook."}
+  , {tag:'div', html:"For reals."}
   ]
 
   function changeItUp(){
     for (var i in obj) {
-      if (Math.round( Math.random() )) {
+      if ( Math.round(Math.random()) ) {
         // obj[i] = collection[i]
         console.log(obj[i])
       }
     }
   }
-
 
   // input.addEventListener('input',updateView)
 

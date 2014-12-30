@@ -44,19 +44,20 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
   DEFINE(BindableObject.prototype, 'addProperty', {enumerable:false, value:addProperty})
 
 
-  function BindableArray(data){
-    var self = Array.prototype.slice.apply(arguments)
+  function BindableArray(){
+    var args = Array.prototype.slice.apply(arguments)[0]
+    var self = []
 
     DEFINE(self, '_new_property_', { enumerable:false, configurable:false,
-      set:function(keyval){ addProperty.call(self, keyval[0], keyval[1]) }
+      set:function(keyval){ addProperty.apply(self, keyval) }
     })
-    for (var i in data) {
-      if (data.hasOwnProperty(i)) this._new_property_ = [i, data[i]]
+    for (var i in args) {
+      if (args.hasOwnProperty(i)) self._new_property_ = [i, args[i]]
     }
 
     return self
   }
-  DEFINE(BindableArray.prototype, 'addProperty', {enumerable:false, value:addProperty})
+  // DEFINE(BindableArray.prototype, 'addProperty', {enumerable:false, value:addProperty})
 
 
   function addProperty(key, val){
@@ -71,7 +72,6 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
         else { _val = value; _ct.setter_cb(_id, value) }
       }
     })
-
     if (familyOf(val) === 'complex') val = new Bindable(val)
     this[key] = val
   }
@@ -112,7 +112,7 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
     // if (typeOf(bindable) !== 'BindableObject' && typeOf(bindable) !== 'BindableArray') return 'Not binadable.'
     var html = ''
 
-    each(bindable[0], function(key, val){
+    each(bindable, function(key, val){
       if (validNode(val))
         html += '<'+val.tag+'>'+val.inner+'</'+val.tag+'>\n'
     })
