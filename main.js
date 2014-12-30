@@ -106,26 +106,6 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
 
 
 
-  function toHtml(bindable){
-    // if (typeOf(bindable) !== 'BindableObject' && typeOf(bindable) !== 'BindableArray') return 'Not binadable.'
-    var html = ''
-
-    each(bindable[0], function(key, val){
-      if (validNode(val))
-        html += '<'+val.tag+'>'+val.inner+'</'+val.tag+'>\n'
-    })
-
-    return html
-  }
-  var validTags = ['div','h1','li','a','p','p']
-  function validNode(d){
-    if (d && d.hasOwnProperty('tag') && d.hasOwnProperty('inner') && validTags.indexOf(d.tag) !== false) {
-      return true
-    }
-  }
-
-
-
   /* Inverts control: Prevents inputs from receiving updates while they are the sender. */
 
   function fieldManager(receive_handlers){
@@ -206,9 +186,8 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
 
   var CrossTalk = {
     Binding: BindableContainer
-  , toHtml: toHtml
-  , addForm: addForm
   , fieldManager: fieldManager
+  , addForm: addForm
   , takeId: function(cb){ _ct.send_id = cb }
   }
   DEFINE(CrossTalk, 'bindables', {get:function(){return _bindables}, enumerable: true})
