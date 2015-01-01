@@ -58,27 +58,60 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
     else if (familyOf(data) === 'complex')
       return new BindableObject(data)
   }
-
-  function BindableObject(data){
-    DEFINE(this, '_new_property_', { enumerable:false, configurable:false,
-      set:function(keyval){ addProperty.apply(this, keyval) }
-    })
-    for (var prop in data) {
-      if (data.hasOwnProperty(prop)) this._new_property_ = [prop, data[prop]]
-    }
+  function bind(parent, property, setter_cb){
+    CrossTalk.takeId(function(id){ _events.bind(id, setter_cb) })
+    parent[property] = ID_GETTER_KEY
+  }
+  function unbind(property, setter_cb){
+    _events.unbind(setter_cb)
+  }
+  function recompute(data){
+    if (familyOf(data) === 'complex')
+      this.constructor(data)
+    return this
   }
 
 
-  function BindableArray(){
-    var args = Array.prototype.slice.apply(arguments)[0]
+  function BindableObject(data){
+    Object.keys(data).map(function(prop){
+      this._new_property_ = [prop, data[prop]]
+    }.bind(this))
+  }
+  DEFINE(BindableObject.prototype, 'bind', { enumerable:false, configurable:false, value:bind })
+  DEFINE(BindableObject.prototype, 'unbind', { enumerable:false, configurable:false, value:unbind })
+  DEFINE(BindableObject.prototype, 'recompute', { enumerable:false, configurable:false, value:recompute })
+  DEFINE(BindableObject.prototype, '_new_property_', { enumerable:false, configurable:false,
+    set:function(keyval){ addProperty.apply(this, keyval) }
+  })
+
+
+  function BindableArray(array){
     var self = []
 
+    DEFINE(self, 'bind', { enumerable:false, configurable:false, value:bind })
+    DEFINE(self, 'unbind', { enumerable:false, configurable:false, value:unbind })
+    DEFINE(self, 'recompute', { enumerable:false, configurable:false, value:recompute })
     DEFINE(self, '_new_property_', { enumerable:false, configurable:false,
       set:function(keyval){ addProperty.apply(self, keyval) }
     })
-    for (var i in args) {
-      if (args.hasOwnProperty(i)) self._new_property_ = [i, args[i]]
-    }
+    DEFINE(self, 'push', { enumerable:false, configurable:false,
+      value:function(v){ self._new_property_ = [self.length, v] }
+    })
+    DEFINE(self, 'pop', { enumerable:false, configurable:false,
+      value:function(){ var r = self[self.length-1]; self.length = self.length-1; return r }
+    })
+    DEFINE(self, 'concat', { enumerable:false, configurable:false,
+      value:function(arr){
+        if (arr && arr.length) {
+          Object.keys(arr).map(function(key){
+            self._new_property_ = [self.length, arr[key]]
+          })
+        }
+      }
+    })
+    Object.keys(array).map(function(key){
+      self._new_property_ = [key, array[key]]
+    })
 
     return self
   }
@@ -90,13 +123,21 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
 
     DEFINE(this, key, {
       enumerable: true
+    , configurable: true
     , get: function(){ return _val }
     , set: function(value){
-        if (value === ID_GETTER_KEY) { _ct.send_id(_id) }
-        else { _val = value; _ct.setter_cb(_id, value) }
+        if (value === ID_GETTER_KEY) {
+          _ct.send_id(_id)
+        }
+        else if (familyOf(value) === 'complex') {
+          _val = new Bindable(value)
+        }
+        else {
+          _val = value
+        }
+        _ct.setter_cb(_id, _val)
       }
     })
-    if (familyOf(val) === 'complex') val = new Bindable(val)
     this[key] = val
   }
 
@@ -104,7 +145,7 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
 
   /* Takes a form DOM object and a Binding object, and does the rest for you. */
 
-  function addForm(form, container){
+  function bindForm(form, container){
     var bindable = container.bindable
 
     ;[].forEach.call(form.querySelectorAll('input'), function(field){
@@ -149,31 +190,12 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
 
 
 
-  /* Recursively constructs a copy of the input object, having getter/setter pairs of every ownProperty. */
+  /* Our entry point for creating bindable objects, keeps a reference to the object created. */
 
-  function BindableContainer(data){
-    var _data
-    if (familyOf(data) !== 'complex') return null
-
-    _data = new Bindable(data)
-
-    this.bind = bind
-    this.unbind = unbind
-    this.recompute = function(data){
-      if (familyOf(data) === 'complex')
-        _data = new Bindable(data)
-      return this
-    }
-    DEFINE(this, 'bindable', {get:function(){return _data}, enumerable:true, configurable:false})
-
-    _bindables.push(_data)
-  }
-  function bind(parent, property, setter_cb){
-    CrossTalk.takeId(function(id){ _events.bind(id, setter_cb) })
-    parent[property] = ID_GETTER_KEY
-  }
-  function unbind(property, setter_cb){
-    _events.unbind(setter_cb)
+  function NewBindable(data){
+    var bindable = new Bindable(data)
+    _bindables.push(bindable)
+    return bindable
   }
 
 
@@ -211,9 +233,9 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
 
 
   var CrossTalk = {
-    Binding: BindableContainer
+    Binding: NewBindable
   , fieldManager: fieldManager
-  , addForm: addForm
+  , bindForm: bindForm
   , takeId: function(cb){ _ct.send_id = cb }
   }
   DEFINE(CrossTalk, 'bindables', {get:function(){return _bindables}, enumerable: true})
