@@ -62,23 +62,34 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
     else if (familyOf(data) === 'complex')
       return new BindableObject(data)
   }
-  function bind(opts, setter_cb){ console.log('BIND', opts)
-    if (opts.length && opts.length === 2) {
+
+  function bind(){ console.log('BIND', arguments)
+
+    opts = Array.prototype.slice.call(arguments)
+
+    if (opts.length === 3) {
       var parent = opts[0]
       var property = opts[1]
+      var setter_cb = opts[2]
+
       parent[property] = PROPERTY_MANIPULATOR({
         send:function(id){ _events.bind(id,setter_cb) }
       })
     }
+
     else {
-      opts._new_property_ = PROPERTY_MANIPULATOR({
+      var setter_cb = opts[1]
+      opts[0]._array_events_ = PROPERTY_MANIPULATOR({
         send:function(id){ _events.bind(id,setter_cb) }
       })
     }
+
   }
+
   function unbind(setter_cb){
     _events.unbind(setter_cb)
   }
+
   function recompute(data){
     if (familyOf(data) === 'complex')
       this.constructor(data)
@@ -109,11 +120,21 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
     DEFINE(self, '_new_property_', { enumerable:false, configurable:false,
       set:function(){ addProperty.apply(self, arguments) }
     })
+    DEFINE(self, '_array_events_', { enumerable:false, configurable:false,
+      set:function(manipulator){
+        if (manipulator === PROPERTY_MANIPULATOR && PROPERTY_MANIPULATOR().send)
+          PROPERTY_MANIPULATOR().send(this._id)
+      }
+    })
     OVERRIDE(self, 'push', function(v){
       self._new_property_ = [self.length, v]
       _events.trigger(this._id, ['push', self.length-1, self[self.length-1]])
     })
-    OVERRIDE(self, 'pop', function(){ var r = self[self.length-1]; self.length = self.length-1; return r })
+    OVERRIDE(self, 'pop', function(){
+      var r = self[self.length-1]
+      self.length = self.length-1
+      return r
+    })
     OVERRIDE(self, 'shift', function(){
       var r = self[0]
       Object.keys(self).map(function(idx){
@@ -134,6 +155,15 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
 
       self._new_property_ = [0, obj]
     })
+    OVERRIDE(self, 'splice', function(idx1, idx2){
+      //
+    })
+    OVERRIDE(self, 'slice', function(idx1, idx2){
+      //
+    })
+    OVERRIDE(self, 'reverse', function(idx1, idx2){
+      //
+    })
     OVERRIDE(self, 'concat', function(arr){
       if (arr && arr.length) {
         Object.keys(arr).map(function(key){
@@ -141,8 +171,8 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
         })
       }
     })
-    Object.keys(array).map(function(key){
-      self._new_property_ = [key, array[key]]
+    Object.keys(array).map(function(idx){
+      self._new_property_ = [+idx, array[+idx]]
     })
 
     return self
@@ -156,12 +186,7 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
     if (typeOf(args) === 'Array') {
       var key = args[0]
       var val = args[1]
-    }
-    else if (args === PROPERTY_MANIPULATOR && PROPERTY_MANIPULATOR().send) {
-      PROPERTY_MANIPULATOR().send(this._id)
-      return
-    }
-    else {
+    } else {
       console.log('Abort! Bad property assignment:',args)
       return
     }
@@ -201,7 +226,7 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
     ;[].forEach.call(form.querySelectorAll('input'), function(field){
 
       if (field.name in bindable) {
-        CrossTalk.fieldManager(function(input_handler, output_handler){
+        fieldManager(function(input_handler, output_handler){
 
           field.addEventListener('input', function(ev){
             var do_it = function(){ bindable[field.name] = ev.target.value }
@@ -294,7 +319,7 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
   if (typeof module !== 'undefined' && module.hasOwnProperty('exports')) {
     module.exports = CrossTalk
   } else {
-    window.glue = NewBindable
+    window.Connected = NewBindable
     window.familyOf = familyOf
     window.typeOf = typeOf
     window.Bindable = Bindable
