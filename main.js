@@ -42,16 +42,15 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
   var OVERRIDE = function(object, method_name, method){
     DEFINE(object, method_name, { enumerable:false, configurable:false, value:method })
   }
-  var _property_modifier_ = null
-  var PROPERTY_MODIFIER = function(obj){
-    if (! obj) return _property_modifier_
-    else _property_modifier_ = obj
-    return PROPERTY_MODIFIER
+  var _property_manipulator_ = null
+  var PROPERTY_MANIPULATOR = function(obj){
+    if (! obj) return _property_manipulator_
+    else _property_manipulator_ = obj
+    return PROPERTY_MANIPULATOR
   }
 
   var _bindables = []
   var _events = new MicroEvent()
-  function _setter_cb(id,val){ _events.trigger(id,val) }
 
 
 
@@ -63,13 +62,21 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
     else if (familyOf(data) === 'complex')
       return new BindableObject(data)
   }
-  function bind(parent, property, setter_cb){
-    parent[property] = PROPERTY_MODIFIER({
-      send:function(id){ _events.bind(id,setter_cb) }
-    })
-    // parent[property] = PROPERTY_MODIFIER
+  function bind(opts, setter_cb){ console.log('BIND', opts)
+    if (opts.length && opts.length === 2) {
+      var parent = opts[0]
+      var property = opts[1]
+      parent[property] = PROPERTY_MANIPULATOR({
+        send:function(id){ _events.bind(id,setter_cb) }
+      })
+    }
+    else {
+      opts._new_property_ = PROPERTY_MANIPULATOR({
+        send:function(id){ _events.bind(id,setter_cb) }
+      })
+    }
   }
-  function unbind(property, setter_cb){
+  function unbind(setter_cb){
     _events.unbind(setter_cb)
   }
   function recompute(data){
@@ -88,20 +95,24 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
   DEFINE(BindableObject.prototype, 'unbind', { enumerable:false, configurable:false, value:unbind })
   DEFINE(BindableObject.prototype, 'recompute', { enumerable:false, configurable:false, value:recompute })
   DEFINE(BindableObject.prototype, '_new_property_', { enumerable:false, configurable:false,
-    set:function(keyval){ addProperty.apply(this, keyval) }
+    set:function(){ addProperty.apply(this, arguments) }
   })
 
 
   function BindableArray(array){
     var self = []
 
+    DEFINE(self, '_id', { enumerable:false, configurable:false, value:Math.random().toString().split('.')[1] })
     DEFINE(self, 'bind', { enumerable:false, configurable:false, value:bind })
     DEFINE(self, 'unbind', { enumerable:false, configurable:false, value:unbind })
     DEFINE(self, 'recompute', { enumerable:false, configurable:false, value:recompute })
     DEFINE(self, '_new_property_', { enumerable:false, configurable:false,
-      set:function(keyval){ addProperty.apply(self, keyval) }
+      set:function(){ addProperty.apply(self, arguments) }
     })
-    OVERRIDE(self, 'push', function(v){ self._new_property_ = [self.length, v] })
+    OVERRIDE(self, 'push', function(v){
+      self._new_property_ = [self.length, v]
+      _events.trigger(this._id, ['push', self.length-1, self[self.length-1]])
+    })
     OVERRIDE(self, 'pop', function(){ var r = self[self.length-1]; self.length = self.length-1; return r })
     OVERRIDE(self, 'shift', function(){
       var r = self[0]
@@ -116,8 +127,8 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
       Object.keys(self).map(function(idx){
         console.log(+idx+1, +idx)
         self._new_property_ = [+idx+1, self[+idx]]
-        self[+idx] = PROPERTY_MODIFIER({
-          send:function(id){ self[+idx+1] = PROPERTY_MODIFIER({id:id}) }
+        self[+idx] = PROPERTY_MANIPULATOR({
+          send:function(id){ self[+idx+1] = PROPERTY_MANIPULATOR({id:id}) }
         })
       })
 
@@ -138,29 +149,42 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
   }
 
 
-  function addProperty(key, val){
+  function addProperty(args){
     var _val = undefined
     var _id = Math.random().toString().split('.')[1]
-    console.log('addProperty', key, val)
+
+    if (typeOf(args) === 'Array') {
+      var key = args[0]
+      var val = args[1]
+    }
+    else if (args === PROPERTY_MANIPULATOR && PROPERTY_MANIPULATOR().send) {
+      PROPERTY_MANIPULATOR().send(this._id)
+      return
+    }
+    else {
+      console.log('Abort! Bad property assignment:',args)
+      return
+    }
+    // console.log('addProperty', key, val)
 
     DEFINE(this, key, {
       enumerable: true
     , configurable: true
     , get: function(){ return _val }
     , set: function(value){
-        if (value === PROPERTY_MODIFIER && PROPERTY_MODIFIER().send) {
-          PROPERTY_MODIFIER().send(_id)
+        if (value === PROPERTY_MANIPULATOR && PROPERTY_MANIPULATOR().send) {
+          PROPERTY_MANIPULATOR().send(_id)
         }
-        else if (value === PROPERTY_MODIFIER && PROPERTY_MODIFIER().id) {
-          _id = PROPERTY_MODIFIER().id
+        else if (value === PROPERTY_MANIPULATOR && PROPERTY_MANIPULATOR().id) {
+          _id = PROPERTY_MANIPULATOR().id
         }
         else if (familyOf(value) === 'complex') {
           _val = new Bindable(value)
-          _setter_cb(_id, _val)
+          _events.trigger(_id, _val)
         }
         else {
           _val = value
-          _setter_cb(_id, _val)
+          _events.trigger(_id, _val)
         }
       }
     })
@@ -184,7 +208,7 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
             input_handler( do_it )
           })
 
-          container.bind(bindable, field.name, function(val){
+          container.bind([bindable, field.name], function(val){
             var do_it = function(){ field.value = val }
             output_handler( do_it )
           })
@@ -238,6 +262,8 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
       , Function: 'simple'
       , Array: 'complex'
       , Object: 'complex'
+      , 'undefined': 'falsey'
+      , 'null': 'falsey'
       }[typeOf(thing)] || 'complex'
     } else {
       return false
@@ -258,19 +284,17 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
 
 
 
-  var CrossTalk = {
-    Binding: NewBindable
-  , fieldManager: fieldManager
-  , bindForm: bindForm
-  }
-  DEFINE(CrossTalk, 'bindables', {get:function(){return _bindables}, enumerable: true})
-  DEFINE(CrossTalk, 'PROPERTY_MODIFIER', {value:PROPERTY_MODIFIER, writeable:false})
+  NewBindable.fieldManager = fieldManager
+  NewBindable.bindForm = bindForm
+
+  DEFINE(NewBindable, 'bindables', {get:function(){return _bindables}, enumerable:true})
+  DEFINE(NewBindable, 'PROPERTY_MANIPULATOR', {value:PROPERTY_MANIPULATOR, writeable:false})
 
 
   if (typeof module !== 'undefined' && module.hasOwnProperty('exports')) {
     module.exports = CrossTalk
   } else {
-    window.CrossTalk = CrossTalk
+    window.glue = NewBindable
     window.familyOf = familyOf
     window.typeOf = typeOf
     window.Bindable = Bindable
