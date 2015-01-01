@@ -220,8 +220,7 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
 
   /* Takes a form DOM object and a Binding object, and does the rest for you. */
 
-  function bindForm(form, container){
-    var bindable = container.bindable
+  function bindForm(form, bindable){
 
     ;[].forEach.call(form.querySelectorAll('input'), function(field){
 
@@ -233,7 +232,7 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
             input_handler( do_it )
           })
 
-          container.bind([bindable, field.name], function(val){
+          bindable.bind(bindable, field.name, function(val){
             var do_it = function(){ field.value = val }
             output_handler( do_it )
           })

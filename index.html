@@ -46,15 +46,16 @@
   <script src="/node_modules/microevent/microevent.js"></script>
   <script src="/main.js"></script>
   <script>
-  var bindable = new CrossTalk.Binding({
+  var bindable = new Connected({
     one: 'Your'
   , two: 'input'
   , three: 'goes'
   , four: 'here.'
   })
+  console.log(bindable)
 
-  CrossTalk.addForm(document.querySelector('#form1'), bindable)
-  CrossTalk.addForm(document.querySelector('#form2'), bindable)
+  Connected.bindForm(document.querySelector('#form1'), bindable)
+  Connected.bindForm(document.querySelector('#form2'), bindable)
   </script>
 </body>
 </html>

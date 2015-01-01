@@ -2,7 +2,7 @@
 
 (WIP)
 
-_CrossTalk.js_ is my humble attempt at a stand-alone two-way data binding library. All updates occur through event emitters, triggered by property setters. This is more efficient than some of the other implementations out there.
+_Connected.js_ is my humble attempt at a stand-alone two-way data binding library. All updates occur through event emitters, triggered by property setters. This is more efficient than some of the other implementations out there.
 
 ## Demo
 
@@ -10,7 +10,7 @@ Right now this implementation only supports recursive creation of bindable objec
 
 See [index.html](//github.com/rm-rf-etc/crosstalk/blob/master/index.html).
 ``` javascript
-  var container = new CrossTalk.Binding({
+  new Connected.Binding({
     one: 'Your'
   , two: 'input'
   , three: 'goes'
