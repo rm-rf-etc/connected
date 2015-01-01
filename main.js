@@ -42,14 +42,16 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
   var OVERRIDE = function(object, method_name, method){
     DEFINE(object, method_name, { enumerable:false, configurable:false, value:method })
   }
-  var ID_GETTER_KEY = {}
+  var _property_modifier_ = null
+  var PROPERTY_MODIFIER = function(obj){
+    if (! obj) return _property_modifier_
+    else _property_modifier_ = obj
+    return PROPERTY_MODIFIER
+  }
 
   var _bindables = []
   var _events = new MicroEvent()
-  var _ct = {
-    setter_cb: function(id,val){ _events.trigger(id,val) }
-  , send_id: function(){}
-  }
+  function _setter_cb(id,val){ _events.trigger(id,val) }
 
 
 
@@ -62,8 +64,10 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
       return new BindableObject(data)
   }
   function bind(parent, property, setter_cb){
-    CrossTalk.takeId(function(id){ _events.bind(id, setter_cb) })
-    parent[property] = ID_GETTER_KEY
+    parent[property] = PROPERTY_MODIFIER({
+      send:function(id){ _events.bind(id,setter_cb) }
+    })
+    // parent[property] = PROPERTY_MODIFIER
   }
   function unbind(property, setter_cb){
     _events.unbind(setter_cb)
@@ -102,10 +106,22 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
     OVERRIDE(self, 'shift', function(){
       var r = self[0]
       Object.keys(self).map(function(idx){
-        self[(+idx)-1] = self[+idx]
+        self[+idx-1] = self[+idx]
       })
       self.length = self.length-1
       return r
+    })
+    OVERRIDE(self, 'unshift', function(obj){
+
+      Object.keys(self).map(function(idx){
+        console.log(+idx+1, +idx)
+        self._new_property_ = [+idx+1, self[+idx]]
+        self[+idx] = PROPERTY_MODIFIER({
+          send:function(id){ self[+idx+1] = PROPERTY_MODIFIER({id:id}) }
+        })
+      })
+
+      self._new_property_ = [0, obj]
     })
     OVERRIDE(self, 'concat', function(arr){
       if (arr && arr.length) {
@@ -125,22 +141,27 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
   function addProperty(key, val){
     var _val = undefined
     var _id = Math.random().toString().split('.')[1]
+    console.log('addProperty', key, val)
 
     DEFINE(this, key, {
       enumerable: true
     , configurable: true
     , get: function(){ return _val }
     , set: function(value){
-        if (value === ID_GETTER_KEY) {
-          _ct.send_id(_id)
+        if (value === PROPERTY_MODIFIER && PROPERTY_MODIFIER().send) {
+          PROPERTY_MODIFIER().send(_id)
+        }
+        else if (value === PROPERTY_MODIFIER && PROPERTY_MODIFIER().id) {
+          _id = PROPERTY_MODIFIER().id
         }
         else if (familyOf(value) === 'complex') {
           _val = new Bindable(value)
+          _setter_cb(_id, _val)
         }
         else {
           _val = value
+          _setter_cb(_id, _val)
         }
-        _ct.setter_cb(_id, _val)
       }
     })
     this[key] = val
@@ -241,10 +262,9 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
     Binding: NewBindable
   , fieldManager: fieldManager
   , bindForm: bindForm
-  , takeId: function(cb){ _ct.send_id = cb }
   }
   DEFINE(CrossTalk, 'bindables', {get:function(){return _bindables}, enumerable: true})
-  DEFINE(CrossTalk, 'ID_GETTER_KEY', {value:ID_GETTER_KEY, writeable:false})
+  DEFINE(CrossTalk, 'PROPERTY_MODIFIER', {value:PROPERTY_MODIFIER, writeable:false})
 
 
   if (typeof module !== 'undefined' && module.hasOwnProperty('exports')) {
