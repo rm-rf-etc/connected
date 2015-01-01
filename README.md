@@ -1,4 +1,4 @@
-# CrossTalk.js
+# Connected.js
 
 (WIP)
 
@@ -10,16 +10,16 @@ Right now this implementation only supports recursive creation of bindable objec
 
 See [index.html](//github.com/rm-rf-etc/crosstalk/blob/master/index.html).
 ``` javascript
-  new Connected.Binding({
+  var bindable = new Connected({
     one: 'Your'
   , two: 'input'
   , three: 'goes'
   , four: 'here.'
   })
+  console.log(bindable)
 
-  CrossTalk.addForm(document.querySelector('#form1'), container)
-  CrossTalk.addForm(document.querySelector('#form2'), container)
-  CrossTalk.addForm(document.querySelector('#form3'), container)
+  Connected.bindForm(document.querySelector('#form1'), bindable)
+  Connected.bindForm(document.querySelector('#form2'), bindable)
 ```
 
 ## License
