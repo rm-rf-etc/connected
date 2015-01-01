@@ -2,13 +2,13 @@
 
 (WIP)
 
-_Connected.js_ is my humble attempt at a stand-alone two-way data binding library. All updates occur through event emitters, triggered by property setters. This is more efficient than some of the other implementations out there.
+_Connected.js_ is my humble attempt at a never-polling two-way data binding library. All updates occur through event emitters, triggered by property setters. This is more efficient than some of the other implementations out there.
 
 ## Demo
 
 Right now this implementation only supports recursive creation of bindable objects, and binding them to forms, where the form name attribute matches the object property.
 
-See [index.html](//github.com/rm-rf-etc/crosstalk/blob/master/index.html).
+See [index.html](//github.com/rm-rf-etc/connected/blob/master/index.html).
 ``` javascript
   var bindable = new Connected({
     one: 'Your'
@@ -24,4 +24,4 @@ See [index.html](//github.com/rm-rf-etc/crosstalk/blob/master/index.html).
 
 ## License
 
-CrossTalk.js is available under the [MIT License](//github.com/rm-rf-etc/crosstalk/blob/master/LICENSE.txt).
+Connected.js is available under the [MIT License](//github.com/rm-rf-etc/connected/blob/master/LICENSE.txt).
