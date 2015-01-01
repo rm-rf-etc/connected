@@ -39,6 +39,9 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
   /*  Private Class Data  */
 
   var DEFINE = Object.defineProperty
+  var OVERRIDE = function(object, method_name, method){
+    DEFINE(object, method_name, { enumerable:false, configurable:false, value:method })
+  }
   var ID_GETTER_KEY = {}
 
   var _bindables = []
@@ -94,19 +97,21 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
     DEFINE(self, '_new_property_', { enumerable:false, configurable:false,
       set:function(keyval){ addProperty.apply(self, keyval) }
     })
-    DEFINE(self, 'push', { enumerable:false, configurable:false,
-      value:function(v){ self._new_property_ = [self.length, v] }
+    OVERRIDE(self, 'push', function(v){ self._new_property_ = [self.length, v] })
+    OVERRIDE(self, 'pop', function(){ var r = self[self.length-1]; self.length = self.length-1; return r })
+    OVERRIDE(self, 'shift', function(){
+      var r = self[0]
+      Object.keys(self).map(function(idx){
+        self[(+idx)-1] = self[+idx]
+      })
+      self.length = self.length-1
+      return r
     })
-    DEFINE(self, 'pop', { enumerable:false, configurable:false,
-      value:function(){ var r = self[self.length-1]; self.length = self.length-1; return r }
-    })
-    DEFINE(self, 'concat', { enumerable:false, configurable:false,
-      value:function(arr){
-        if (arr && arr.length) {
-          Object.keys(arr).map(function(key){
-            self._new_property_ = [self.length, arr[key]]
-          })
-        }
+    OVERRIDE(self, 'concat', function(arr){
+      if (arr && arr.length) {
+        Object.keys(arr).map(function(key){
+          self._new_property_ = [self.length, arr[key]]
+        })
       }
     })
     Object.keys(array).map(function(key){
