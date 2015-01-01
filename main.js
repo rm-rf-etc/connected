@@ -92,7 +92,7 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
 
   function recompute(data){
     if (familyOf(data) === 'complex')
-      this.constructor(data)
+      this.constructor.apply(this,data)
     return this
   }
 
