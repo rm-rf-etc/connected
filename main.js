@@ -65,7 +65,7 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
 
   function bind(){ console.log('BIND', arguments)
 
-    opts = Array.prototype.slice.call(arguments)
+    var opts = Array.prototype.slice.call(arguments)
 
     if (opts.length === 3) {
       var parent = opts[0]
