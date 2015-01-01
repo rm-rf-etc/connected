@@ -298,14 +298,6 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
     return (thing != null && !Number.isNaN(thing) && thing.constructor) ? thing.constructor.name : '' + thing
   }
 
-  function each(obj, cb){
-    // if (typeOf(obj) === 'BindableObject' || typeOf(obj) === 'BindableArray')
-    //   obj = obj
-
-    for (var prop in obj)
-      cb(prop, obj[prop])
-  }
-
 
 
   NewBindable.fieldManager = fieldManager
@@ -316,12 +308,12 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
 
 
   if (typeof module !== 'undefined' && module.hasOwnProperty('exports')) {
-    module.exports = CrossTalk
+    module.exports = NewBindable
   } else {
-    window.Connected = NewBindable
-    window.familyOf = familyOf
-    window.typeOf = typeOf
-    window.Bindable = Bindable
+    window.Connected  = NewBindable
+    window.familyOf   = familyOf
+    window.typeOf     = typeOf
+    window.Bindable   = Bindable
   }
 
 })()
