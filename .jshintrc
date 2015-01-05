@@ -1,0 +1,18 @@
+{
+  "asi": true,
+  "undef": true,
+  "laxcomma": true,
+  "globals": {
+    "Connected": false,
+    "concise": false,
+    "familyOf": false,
+    "typeOf": false,
+    "MicroEvent": false,
+    "console": false,
+    "module": false,
+    "window": false,
+    "document": false,
+    "clearTimeout": false,
+    "setTimeout": false
+  }
+}

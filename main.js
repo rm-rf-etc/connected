@@ -42,7 +42,7 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
   var OVERRIDE = function(object, method_name, method){
     DEFINE(object, method_name, { enumerable:false, configurable:false, value:method })
   }
-  var _property_manipulator_ = null
+  var _property_manipulator_
   var PROPERTY_MANIPULATOR = function(obj){
     if (! obj) return _property_manipulator_
     else _property_manipulator_ = obj
@@ -64,13 +64,14 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
   }
 
   function bind(){ // console.log('BIND', arguments)
+    var setter_cb, property, parent, opts
 
-    var opts = Array.prototype.slice.call(arguments)
+    opts = Array.prototype.slice.call(arguments)
 
     if (opts.length === 3) {
-      var parent = opts[0]
-      var property = opts[1]
-      var setter_cb = opts[2]
+      parent = opts[0]
+      property = opts[1]
+      setter_cb = opts[2]
 
       parent[property] = PROPERTY_MANIPULATOR({
         fetch:function(id){ _events.bind(id,setter_cb) }
@@ -78,7 +79,7 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
     }
 
     else if (typeOf(opts[0] === 'Array')) {
-      var setter_cb = opts[1]
+      setter_cb = opts[1]
       // opts[0]._array_events_ = PROPERTY_MANIPULATOR({
       //   fetch:function(id){ _events.bind(id,setter_cb) }
       // })
@@ -98,7 +99,7 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
   }
 
 
-  function BindableObject(data){
+  function BindableObject(data){ console.log(data)
     Object.keys(data).map(function(prop){
       this._new_property_ = [prop, data[prop]]
     }.bind(this))
@@ -115,6 +116,7 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
     var self = []
 
     DEFINE(self, '_id', { enumerable:false, configurable:false, value:+Math.random().toString().split('.')[1] })
+    DEFINE(self, '_timeout', { enumerable:false, configurable:false, value:60 })
     DEFINE(self, 'bind', { enumerable:false, configurable:false, value:bind })
     DEFINE(self, 'unbind', { enumerable:false, configurable:false, value:unbind })
     DEFINE(self, 'recompute', { enumerable:false, configurable:false, value:recompute })
@@ -124,20 +126,26 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
     DEFINE(self, '_array_events_', { enumerable:false, configurable:false,
       set:function(manipulator){
         if (manipulator === PROPERTY_MANIPULATOR && PROPERTY_MANIPULATOR().fetch)
-          PROPERTY_MANIPULATOR().fetch(this._id)
+          PROPERTY_MANIPULATOR().fetch(self._id)
       }
     })
     OVERRIDE(self, 'push', function(obj){
 
       self._new_property_ = [self.length, obj]
-      _events.trigger(this._id, [self.length-1, self[self.length-1]], 'push')
+      debounce(self._timeout, 'push'+self._id, function(){
+        _events.trigger(self._id, [self.length-1, self[self.length-1]], 'push')
+        console.log( 'emit: push'+self._id )
+      })
 
     })
     OVERRIDE(self, 'pop', function(){
 
       var r = self[self.length-1]
       self.length = self.length-1
-      _events.trigger(this._id, r, 'pop')
+      debounce(self._timeout, 'pop'+self._id, function(){
+        _events.trigger(self._id, r, 'pop')
+        console.log( 'emit: pop'+self._id )
+      })
       return r
 
     })
@@ -151,7 +159,10 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
         })
       })
       self.length = self.length-1
-      _events.trigger(this._id, r, 'shift')
+      debounce(self._timeout, 'shift'+self._id, function(){
+        _events.trigger(self._id, r, 'shift')
+        console.log( 'emit: shift'+self._id )
+      })
       return r
 
     })
@@ -165,20 +176,29 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
         })
       })
       self._new_property_ = [0, obj]
-      _events.trigger(this._id, self, 'unshift')
+      debounce(self._timeout, 'unshift'+self._id, function(){
+        _events.trigger(self._id, self, 'unshift')
+        console.log( 'emit: unshift'+self._id )
+      })
       return self.length
 
     })
     OVERRIDE(self, 'splice', function(){
 
+      debounce(self._timeout, 'splice'+self._id, function(){
+        _events.trigger(self._id, self, 'splice')
+        console.log( 'emit: splice'+self._id )
+      })
       Array.prototype.splice.apply(self, arguments)
-      _events.trigger(this._id, self, 'splice')
 
     })
     OVERRIDE(self, 'slice', function(){
 
       Array.prototype.slice.apply(self, arguments)
-      _events.trigger(this._id, self, 'slice')
+      debounce(self._timeout, 'slice'+self._id, function(){
+        _events.trigger(self._id, self, 'slice')
+        console.log( 'emit: slice'+self._id )
+      })
 
     })
     OVERRIDE(self, 'reverse', function(idx1, idx2){ // This works, but it's not optimized yet.
@@ -197,7 +217,10 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
         // Array.prototype.splice.call(self, length, 1)
       }
       Array.prototype.reverse.call(self)
-      _events.trigger(this._id, self, 'reverse')
+      debounce(self._timeout, 'reverse'+self._id, function(){
+        _events.trigger(self._id, self, 'reverse')
+        console.log( 'emit: reverse'+self._id )
+      })
       return self
 
     })
@@ -211,7 +234,10 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
           self._new_property_ = [self.length, arr[key]]
         })
       }
-      _events.trigger(this._id, self, 'concat')
+      debounce(self._timeout, 'concat'+self._id, function(){
+        _events.trigger(self._id, self, 'concat')
+        console.log( 'emit: concat'+self._id )
+      })
       return self
 
     })
@@ -224,12 +250,12 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
 
 
   function addProperty(args){
-    var _val = undefined
-    var _id = +Math.random().toString().split('.')[1]
+    var _val, _id, key, val
+    _id = +Math.random().toString().split('.')[1]
 
     if (typeOf(args) === 'Array') {
-      var key = args[0]
-      var val = args[1]
+      key = args[0]
+      val = args[1]
     } else {
       console.log('Abort! Bad property assignment:',args)
       return
@@ -325,7 +351,8 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
   /*  HELPERS  */
 
   function familyOf(thing){
-    if (typeOf(thing)) {
+    var type = typeOf(thing)
+    if (type) {
       return {
         Date: 'simple'
       , String: 'simple'
@@ -336,15 +363,25 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
       , Object: 'complex'
       , 'undefined': 'falsey'
       , 'null': 'falsey'
-      }[typeOf(thing)] || 'complex'
+      }[type] || (/^HTML\w*Element$/g.test(type) ? 'HTMLElement' : 'complex')
     } else {
       return false
     }
   }
 
   function typeOf(thing){
+    // Using `!=` so that `false` will evaluate to true, while all other falsey values are false.
     return (thing != null && !Number.isNaN(thing) && thing.constructor) ? thing.constructor.name : '' + thing
   }
+
+  var debounce
+  ;(function(){
+    var bounced = {}
+    debounce = function(t, id, cb){
+      clearTimeout( bounced[id] )
+      bounced[id] = setTimeout(cb, t)
+    }
+  })()
 
 
 
