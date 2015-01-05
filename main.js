@@ -63,7 +63,7 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
       return new BindableObject(data)
   }
 
-  function bind(){ console.log('BIND', arguments)
+  function bind(){ // console.log('BIND', arguments)
 
     var opts = Array.prototype.slice.call(arguments)
 
@@ -73,15 +73,16 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
       var setter_cb = opts[2]
 
       parent[property] = PROPERTY_MANIPULATOR({
-        send:function(id){ _events.bind(id,setter_cb) }
+        fetch:function(id){ _events.bind(id,setter_cb) }
       })
     }
 
-    else {
+    else if (typeOf(opts[0] === 'Array')) {
       var setter_cb = opts[1]
-      opts[0]._array_events_ = PROPERTY_MANIPULATOR({
-        send:function(id){ _events.bind(id,setter_cb) }
-      })
+      // opts[0]._array_events_ = PROPERTY_MANIPULATOR({
+      //   fetch:function(id){ _events.bind(id,setter_cb) }
+      // })
+      _events.bind(opts[0]._id,setter_cb)
     }
 
   }
@@ -113,7 +114,7 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
   function BindableArray(array){
     var self = []
 
-    DEFINE(self, '_id', { enumerable:false, configurable:false, value:Math.random().toString().split('.')[1] })
+    DEFINE(self, '_id', { enumerable:false, configurable:false, value:+Math.random().toString().split('.')[1] })
     DEFINE(self, 'bind', { enumerable:false, configurable:false, value:bind })
     DEFINE(self, 'unbind', { enumerable:false, configurable:false, value:unbind })
     DEFINE(self, 'recompute', { enumerable:false, configurable:false, value:recompute })
@@ -122,66 +123,109 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
     })
     DEFINE(self, '_array_events_', { enumerable:false, configurable:false,
       set:function(manipulator){
-        if (manipulator === PROPERTY_MANIPULATOR && PROPERTY_MANIPULATOR().send)
-          PROPERTY_MANIPULATOR().send(this._id)
+        if (manipulator === PROPERTY_MANIPULATOR && PROPERTY_MANIPULATOR().fetch)
+          PROPERTY_MANIPULATOR().fetch(this._id)
       }
     })
-    OVERRIDE(self, 'push', function(v){
-      self._new_property_ = [self.length, v]
-      _events.trigger(this._id, ['push', self.length-1, self[self.length-1]])
+    OVERRIDE(self, 'push', function(obj){
+
+      self._new_property_ = [self.length, obj]
+      _events.trigger(this._id, [self.length-1, self[self.length-1]], 'push')
+
     })
     OVERRIDE(self, 'pop', function(){
+
       var r = self[self.length-1]
       self.length = self.length-1
+      _events.trigger(this._id, r, 'pop')
       return r
+
     })
     OVERRIDE(self, 'shift', function(){
+
       var r = self[0]
       Object.keys(self).map(function(idx){
-        self[+idx-1] = self[+idx]
+        self[+idx] = self[+idx+1]
+        self[+idx] = PROPERTY_MANIPULATOR({
+          fetch:function(id){ self[+idx] = PROPERTY_MANIPULATOR({id:id}) }
+        })
       })
       self.length = self.length-1
+      _events.trigger(this._id, r, 'shift')
       return r
+
     })
     OVERRIDE(self, 'unshift', function(obj){
 
-      Object.keys(self).map(function(idx){
+      Object.keys(self).reverse().map(function(idx){
         console.log(+idx+1, +idx)
         self._new_property_ = [+idx+1, self[+idx]]
         self[+idx] = PROPERTY_MANIPULATOR({
-          send:function(id){ self[+idx+1] = PROPERTY_MANIPULATOR({id:id}) }
+          fetch:function(id){ self[+idx+1] = PROPERTY_MANIPULATOR({id:id}) }
         })
       })
-
       self._new_property_ = [0, obj]
+      _events.trigger(this._id, self, 'unshift')
+      return self.length
+
     })
-    OVERRIDE(self, 'splice', function(idx1, idx2){
-      //
+    OVERRIDE(self, 'splice', function(){
+
+      Array.prototype.splice.apply(self, arguments)
+      _events.trigger(this._id, self, 'splice')
+
     })
-    OVERRIDE(self, 'slice', function(idx1, idx2){
-      //
+    OVERRIDE(self, 'slice', function(){
+
+      Array.prototype.slice.apply(self, arguments)
+      _events.trigger(this._id, self, 'slice')
+
     })
-    OVERRIDE(self, 'reverse', function(idx1, idx2){
-      //
+    OVERRIDE(self, 'reverse', function(idx1, idx2){ // This works, but it's not optimized yet.
+
+      for (var l=0; l < Math.floor(self.length/2); l++) {
+        // Method 1 is this.
+        var r = self.length-1 - l
+        self[r] = PROPERTY_MANIPULATOR({ fetch:function(r_id){
+          self[l] = PROPERTY_MANIPULATOR({ fetch:function(l_id){
+            self[r] = PROPERTY_MANIPULATOR({id:l_id})
+            self[l] = PROPERTY_MANIPULATOR({id:r_id})
+          }})
+        }})
+        // Method 2 would be something like this.
+        // Array.prototype.push.call(self, self[ length ])
+        // Array.prototype.splice.call(self, length, 1)
+      }
+      Array.prototype.reverse.call(self)
+      _events.trigger(this._id, self, 'reverse')
+      return self
+
     })
     OVERRIDE(self, 'concat', function(arr){
-      if (arr && arr.length) {
+
+      // This method is not implemented according to the standard, as it modifies the object it's being called upon.
+      // In the future we'll aim to fix this, making it conform to the standard.
+
+      if (typeOf(arr) === 'Array' && arr.length) {
         Object.keys(arr).map(function(key){
           self._new_property_ = [self.length, arr[key]]
         })
       }
+      _events.trigger(this._id, self, 'concat')
+      return self
+
     })
     Object.keys(array).map(function(idx){
       self._new_property_ = [+idx, array[+idx]]
     })
-
     return self
+
   }
 
 
   function addProperty(args){
     var _val = undefined
-    var _id = Math.random().toString().split('.')[1]
+    var _id = +Math.random().toString().split('.')[1]
 
     if (typeOf(args) === 'Array') {
       var key = args[0]
@@ -197,9 +241,13 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
     , configurable: true
     , get: function(){ return _val }
     , set: function(value){
-        if (value === PROPERTY_MANIPULATOR && PROPERTY_MANIPULATOR().send) {
-          PROPERTY_MANIPULATOR().send(_id)
+        if (value === PROPERTY_MANIPULATOR && PROPERTY_MANIPULATOR().fetch) {
+          PROPERTY_MANIPULATOR().fetch(_id)
         }
+        // else if (value === PROPERTY_MANIPULATOR && PROPERTY_MANIPULATOR().updated) {
+        //   // if (typeOf(_val) === 'complex') _val = PROPERTY_MANIPULATOR({updated:true})
+        //   // else _events.trigger(_id, _val)
+        // }
         else if (value === PROPERTY_MANIPULATOR && PROPERTY_MANIPULATOR().id) {
           _id = PROPERTY_MANIPULATOR().id
         }
@@ -311,9 +359,9 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
     module.exports = NewBindable
   } else {
     window.Connected  = NewBindable
+    window.Bindable   = Bindable
     window.familyOf   = familyOf
     window.typeOf     = typeOf
-    window.Bindable   = Bindable
   }
 
 })()
