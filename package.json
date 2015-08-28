@@ -1,0 +1,25 @@
+{
+  "name": "connected",
+  "version": "1.0.0",
+  "description": "Never-polling 2-way data binding library.",
+  "main": "connected.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rm-rf-etc/connected.git"
+  },
+  "keywords": [
+    "data-binding"
+  ],
+  "author": "Rob Christian",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/rm-rf-etc/connected/issues"
+  },
+  "homepage": "https://github.com/rm-rf-etc/connected#readme",
+  "dependencies": {
+    "microevent": "^1.0.0"
+  }
+}
