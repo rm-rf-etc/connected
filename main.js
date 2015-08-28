@@ -27,12 +27,18 @@ THE SOFTWARE.
 
 /*
 
-Semi-colons are just FUD. If your minifier can't handle this code, switch to one that is JS-compliant.
+Semi-colon line terminators are just FUD. If your minifier can't handle this code, switch to one that is JS-compliant.
+http://blog.izs.me/post/2353458699/an-open-letter-to-javascript-leaders-regarding
+http://inimino.org/~inimino/blog/javascript_semicolons
 
 */
 
 
 ;(function(){
+
+  var familyOf = require('./typeof.js').familyOf
+  var typeOf = require('./typeof.js').typeOf
+  var MicroEvent = require('microevent')
 
 
 
@@ -63,43 +69,7 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
       return new BindableObject(data)
   }
 
-  function bind(){ // console.log('BIND', arguments)
-    var setter_cb, property, parent, opts
-
-    opts = Array.prototype.slice.call(arguments)
-
-    if (opts.length === 3) {
-      parent = opts[0]
-      property = opts[1]
-      setter_cb = opts[2]
-
-      parent[property] = PROPERTY_MANIPULATOR({
-        fetch:function(id){ _events.bind(id,setter_cb) }
-      })
-    }
-
-    else if (typeOf(opts[0] === 'Array')) {
-      setter_cb = opts[1]
-      // opts[0]._array_events_ = PROPERTY_MANIPULATOR({
-      //   fetch:function(id){ _events.bind(id,setter_cb) }
-      // })
-      _events.bind(opts[0]._id,setter_cb)
-    }
-
-  }
-
-  function unbind(setter_cb){
-    _events.unbind(setter_cb)
-  }
-
-  function recompute(data){
-    if (familyOf(data) === 'complex')
-      this.constructor.apply(this,data)
-    return this
-  }
-
-
-  function BindableObject(data){ console.log(data)
+  function BindableObject(data){
     Object.keys(data).map(function(prop){
       this._new_property_ = [prop, data[prop]]
     }.bind(this))
@@ -107,6 +77,13 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
   DEFINE(BindableObject.prototype, 'bind', { enumerable:false, configurable:false, value:bind })
   DEFINE(BindableObject.prototype, 'unbind', { enumerable:false, configurable:false, value:unbind })
   DEFINE(BindableObject.prototype, 'recompute', { enumerable:false, configurable:false, value:recompute })
+  DEFINE(BindableObject.prototype, 'fieldManager', { enumerable:false, configurable:false, value:fieldManager })
+  DEFINE(BindableObject.prototype, 'onChange', { enumerable:false, configurable:false,
+    value:function(props, cb){
+      if (typeOf(props) !== 'Array') return
+      props.forEach(function(prop){ bind(this,prop,cb) }.bind(this))
+    }
+  })
   DEFINE(BindableObject.prototype, '_new_property_', { enumerable:false, configurable:false,
     set:function(){ addProperty.apply(this, arguments) }
   })
@@ -120,6 +97,7 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
     DEFINE(self, 'bind', { enumerable:false, configurable:false, value:bind })
     DEFINE(self, 'unbind', { enumerable:false, configurable:false, value:unbind })
     DEFINE(self, 'recompute', { enumerable:false, configurable:false, value:recompute })
+    DEFINE(self, 'fieldManager', { enumerable:false, configurable:false, value:fieldManager })
     DEFINE(self, '_new_property_', { enumerable:false, configurable:false,
       set:function(){ addProperty.apply(self, arguments) }
     })
@@ -206,12 +184,7 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
       for (var l=0; l < Math.floor(self.length/2); l++) {
         // Method 1 is this.
         var r = self.length-1 - l
-        self[r] = PROPERTY_MANIPULATOR({ fetch:function(r_id){
-          self[l] = PROPERTY_MANIPULATOR({ fetch:function(l_id){
-            self[r] = PROPERTY_MANIPULATOR({id:l_id})
-            self[l] = PROPERTY_MANIPULATOR({id:r_id})
-          }})
-        }})
+        swapIds.call(self,l,r)
         // Method 2 would be something like this.
         // Array.prototype.push.call(self, self[ length ])
         // Array.prototype.splice.call(self, length, 1)
@@ -241,13 +214,26 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
       return self
 
     })
+
     Object.keys(array).map(function(idx){
       self._new_property_ = [+idx, array[+idx]]
     })
+
     return self
 
   }
 
+  function swapIds(l,r){
+    this[r] = PROPERTY_MANIPULATOR({ fetch:function(r_id){
+      this[l] = PROPERTY_MANIPULATOR({ fetch:function(l_id){
+        this[r] = PROPERTY_MANIPULATOR({id:l_id})
+        this[l] = PROPERTY_MANIPULATOR({id:r_id})
+      }})
+    }})
+  }
+
+
+  /*  Class Methods  */
 
   function addProperty(args){
     var _val, _id, key, val
@@ -290,6 +276,41 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
     this[key] = val
   }
 
+  function bind(){ //console.log('BIND', arguments)
+    var setter_cb, property, parent, opts
+
+    opts = Array.prototype.slice.call(arguments)
+
+    if (opts.length === 3) {
+      parent = opts[0]
+      property = opts[1]
+      setter_cb = opts[2]
+
+      parent[property] = PROPERTY_MANIPULATOR({
+        fetch:function(id){ _events.bind(id,setter_cb) }
+      })
+    }
+
+    else if (typeOf(opts[0] === 'Array')) {
+      setter_cb = opts[1]
+      // opts[0]._array_events_ = PROPERTY_MANIPULATOR({
+      //   fetch:function(id){ _events.bind(id,setter_cb) }
+      // })
+      _events.bind(opts[0]._id,setter_cb)
+    }
+
+  }
+
+  function unbind(setter_cb){
+    _events.unbind(setter_cb)
+  }
+
+  function recompute(data){
+    if (familyOf(data) === 'complex')
+      this.constructor.apply(this,data)
+    return this
+  }
+
 
 
   /* Takes a form DOM object and a Binding object, and does the rest for you. */
@@ -298,42 +319,49 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
 
     ;[].forEach.call(form.querySelectorAll('input'), function(field){
 
-      if (field.name in bindable) {
-        fieldManager(function(input_handler, output_handler){
-
-          field.addEventListener('input', function(ev){
-            var do_it = function(){ bindable[field.name] = ev.target.value }
-            input_handler( do_it )
-          })
-
-          bindable.bind(bindable, field.name, function(val){
-            var do_it = function(){ field.value = val }
-            output_handler( do_it )
-          })
-
-        })
-
-        field.value = bindable[field.name]
-      }
+      bindField(field, bindable)
 
     })
+
+  }
+
+  function bindField(field, bindable){
+
+    if (field.name in bindable) {
+
+      var wrap = fieldManager()
+
+      field.addEventListener('input', function(ev){
+        var do_it = function(){ bindable[field.name] = ev.target.value }
+        wrap.input( do_it )
+      })
+
+      bindable.bind(bindable, field.name, function(val){
+        var do_it = function(){ field.value = val }
+        wrap.output( do_it )
+      })
+
+      field.value = bindable[field.name]
+    }
+
   }
 
 
 
   /* Inverts control: Prevents inputs from receiving updates while they are the sender. */
 
-  function fieldManager(receive_handlers){
+  function fieldManager(){
     var _sent_by_me = false
 
-    function input_handler(do_it){
-      _sent_by_me = true
-      do_it()
+    return {
+      "input": function inputManager(do_it){
+        _sent_by_me = true
+        do_it()
+      },
+      "output": function outputManager(do_it){
+        _sent_by_me ? _sent_by_me = false : do_it()
+      }
     }
-    function output_handler(do_it){
-      _sent_by_me ? _sent_by_me = false : do_it()
-    }
-    receive_handlers( input_handler, output_handler )
   }
 
 
@@ -350,30 +378,6 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
 
   /*  HELPERS  */
 
-  function familyOf(thing){
-    var type = typeOf(thing)
-    if (type) {
-      return {
-        Date: 'simple'
-      , String: 'simple'
-      , Number: 'simple'
-      , Boolean: 'simple'
-      , Function: 'simple'
-      , Array: 'complex'
-      , Object: 'complex'
-      , 'undefined': 'falsey'
-      , 'null': 'falsey'
-      }[type] || (/^HTML\w*Element$/g.test(type) ? 'HTMLElement' : 'complex')
-    } else {
-      return false
-    }
-  }
-
-  function typeOf(thing){
-    // Using `!=` so that `false` will evaluate to true, while all other falsey values are false.
-    return (thing != null && !Number.isNaN(thing) && thing.constructor) ? thing.constructor.name : '' + thing
-  }
-
   var debounce
   ;(function(){
     var bounced = {}
@@ -386,19 +390,30 @@ Semi-colons are just FUD. If your minifier can't handle this code, switch to one
 
 
   NewBindable.fieldManager = fieldManager
+  NewBindable.bindField = bindField
   NewBindable.bindForm = bindForm
+  NewBindable.unbind = unbind
+  NewBindable.bind = bind
 
   DEFINE(NewBindable, 'bindables', {get:function(){return _bindables}, enumerable:true})
   DEFINE(NewBindable, 'PROPERTY_MANIPULATOR', {value:PROPERTY_MANIPULATOR, writeable:false})
 
 
   if (typeof module !== 'undefined' && module.hasOwnProperty('exports')) {
-    module.exports = NewBindable
+    var object = {
+    // , Bindable: Bindable
+      Bindable: NewBindable
+    , familyOf: familyOf
+    , typeOf: typeOf
+    , unbind: unbind
+    , bind: bind
+    }
+    module.exports = object
   } else {
+    // window.Bindable   = Bindable
     window.Connected  = NewBindable
-    window.Bindable   = Bindable
     window.familyOf   = familyOf
     window.typeOf     = typeOf
   }
 
-})()
+})();
