@@ -36,8 +36,8 @@ http://inimino.org/~inimino/blog/javascript_semicolons
 
 ;(function(){
 
-  var familyOf = require('app/libs/typeof').familyOf
-  var typeOf = require('app/libs/typeof').typeOf
+  var familyOf = require('typeof').familyOf
+  var typeOf = require('typeof').typeOf
   var MicroEvent = require('microevent')
 
 
