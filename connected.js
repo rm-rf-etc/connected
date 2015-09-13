@@ -31,6 +31,10 @@ Semi-colon line terminators are just FUD. If your minifier can't handle this cod
 http://blog.izs.me/post/2353458699/an-open-letter-to-javascript-leaders-regarding
 http://inimino.org/~inimino/blog/javascript_semicolons
 
+The only time you EVER need a semi-colon for statement termination:
+;[1,2,3].map(function(val){ 'do stuff' })
+;(function(){ 'do stuff' })
+
 */
 
 
@@ -87,12 +91,7 @@ http://inimino.org/~inimino/blog/javascript_semicolons
 		}
 	})
 	DEFINE(BindableObject.prototype, '_new_property_', { enumerable:false, configurable:false,
-		set:function(pair){ addProperty.call(this, this, pair) }
-	})
-	DEFINE(BindableObject.prototype, 'accept_id', { enumerable:false, configurable:false,
-		value:function(id){
-			if (id === PROPERTY_MANIPULATOR) this._new_property_ = PROPERTY_MANIPULATOR
-		}
+		set:function(pair){ addProperty.call(this, pair) }
 	})
 
 
@@ -112,7 +111,7 @@ http://inimino.org/~inimino/blog/javascript_semicolons
 			}
 		})
 		DEFINE(self, '_new_property_', { enumerable:false, configurable:false,
-			set:function(pair){ addProperty.call(self, self, pair) }
+			set:function(pair){ addProperty.call(self, pair) }
 		})
 		OVERRIDE(self, 'push', function(obj){
 
@@ -244,8 +243,8 @@ http://inimino.org/~inimino/blog/javascript_semicolons
 
 	/*  Class Methods  */
 
-	function addProperty(parent, pair){
-		var _val, _id, _prop, val
+	function addProperty(pair){
+		var _val, _id, _prop, val, parent = this
 		_id = +Math.random().toString().split('.')[1]
 
 		if (typeOf(pair) === 'Array') {
@@ -275,7 +274,7 @@ http://inimino.org/~inimino/blog/javascript_semicolons
 				}
 				else if (familyOf(value) === 'complex') {
 					_val = new Bindable(value)
-					_val.accept_id(PROPERTY_MANIPULATOR({id:_id}))
+					if (typeOf(value) === 'Array') _val.accept_id(PROPERTY_MANIPULATOR({id:_id}))
 					_events.trigger(_id, _val)
 				}
 				else {
@@ -285,7 +284,7 @@ http://inimino.org/~inimino/blog/javascript_semicolons
 			}
 		})
 		this[_prop] = val
-		if (familyOf(val) === 'complex') this[_prop].accept_id( PROPERTY_MANIPULATOR({id:_id}) )
+		if (typeOf(val) === 'Array') this[_prop].accept_id( PROPERTY_MANIPULATOR({id:_id}) )
 	}
 
 	function trigger(event){
