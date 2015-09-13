@@ -253,6 +253,7 @@ http://inimino.org/~inimino/blog/javascript_semicolons
 			val = pair[1]
 		} else {
 			console.log('Abort! Bad property assignment:',pair)
+			console.trace()
 			return
 		}
 		parent.trigger('_id', '_new_property_:'+_prop)
